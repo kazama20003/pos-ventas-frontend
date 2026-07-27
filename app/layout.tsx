@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Raleway } from "next/font/google";
+import { Geist, Geist_Mono, Raleway, Sora } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 import { siteConfig } from "@/lib/config/site";
 
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-sans" });
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sora",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +46,8 @@ export default function RootLayout({
         geistSans.variable,
         geistMono.variable,
         "font-sans",
-        raleway.variable
+        raleway.variable,
+        sora.variable
       )}
     >
       <body className="min-h-full flex flex-col">

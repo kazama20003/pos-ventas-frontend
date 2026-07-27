@@ -1,122 +1,319 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { RiSearchLine } from "@remixicon/react"
+import { usePathname, useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 
-import { GekkoMark } from "@/components/brand/gekko-logo"
-
-import { cn } from "@/lib/utils"
-import { siteConfig } from "@/lib/config/site"
-import {
-  primaryNav,
-  type Workspace,
-} from "@/lib/config/navigation"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInput,
-  SidebarMenu,
-  SidebarMenuBadge,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher"
-import { NavUser } from "@/components/layout/nav-user"
 import { useUsuarioActual } from "@/hooks/use-usuario-actual"
+import { limpiarSesion } from "@/lib/auth/session"
+import { siteConfig } from "@/lib/config/site"
 
-const badgeTone: Record<string, string> = {
-  success: "bg-emerald-500 text-white",
-  warning: "bg-amber-500 text-white",
-  info: "bg-sky-500 text-white",
+type Modulo = {
+  label: string
+  desc: string
+  route: string
+  icon: string
+  icon2?: string
+  subs: string[]
 }
+
+const MODULOS: Modulo[] = [
+  { label: "Dashboard", desc: "Resumen general del negocio", route: "/dashboard", icon: "M3 3h8v8H3zM13 3h8v5h-8zM13 12h8v9h-8zM3 15h8v6H3z", subs: ["Resumen del día", "Actividad reciente", "Metas"] },
+  { label: "Ventas", desc: "Punto de venta y transacciones", route: "/ventas", icon: "M4 5h2l2.2 10.5a1 1 0 0 0 1 .8h8.6a1 1 0 0 0 1-.78L21 9H6.4", icon2: "M9.5 20h.01M17.5 20h.01", subs: ["Nueva venta", "Historial", "Devoluciones", "Cotizaciones"] },
+  { label: "Productos", desc: "Catálogo y precios", route: "/productos", icon: "M21 8l-9-5-9 5v8l9 5 9-5V8z", icon2: "M3 8l9 5 9-5M12 13v8", subs: ["Catálogo", "Categorías", "Listas de precios", "Promociones"] },
+  { label: "Inventario", desc: "Stock y movimientos", route: "/inventario", icon: "M3 4h18v4H3z", icon2: "M5 8v12h14V8M10 12h4", subs: ["Stock actual", "Entradas", "Ajustes", "Proveedores"] },
+  { label: "Clientes", desc: "Directorio y créditos", route: "/clientes", icon: "M16 19v-1a4 4 0 0 0-8 0v1", icon2: "M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", subs: ["Directorio", "Créditos", "Fidelización"] },
+  { label: "Caja", desc: "Turnos y arqueos", route: "/caja", icon: "M2 7h20v10H2z", icon2: "M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5.5 10.5h.01M18.5 13.5h.01", subs: ["Apertura / cierre", "Movimientos", "Cortes de caja"] },
+  { label: "Reportes", desc: "Análisis y exportaciones", route: "/reportes", icon: "M4 20h16", icon2: "M7 20v-6M12 20V9M17 20v-4", subs: ["Ventas", "Inventario", "Utilidades", "Impuestos"] },
+  { label: "Configuración", desc: "Ajustes del sistema", route: "/configuracion", icon: "M4 8h10M18 8h2M4 16h4M12 16h8", icon2: "M14 6v4M8 14v4", subs: ["General", "Impresoras", "Usuarios y roles", "Facturación"] },
+]
+
+const hexA = (h: string, a: number) =>
+  h + Math.round(a * 255).toString(16).padStart(2, "0")
+
+function tokens(dark: boolean) {
+  return dark
+    ? {
+        card: "#1e1b23", popup: "#26222d", text: "#f2f0ee", muted: "#8d8798",
+        mutedIcon: "#8d8798", railBorder: "rgba(255,255,255,.07)",
+        hoverPill: "rgba(255,255,255,.06)", avatarRing: "rgba(255,255,255,.15)",
+      }
+    : {
+        card: "#ffffff", popup: "#ffffff", text: "#1c1a22", muted: "#948e86",
+        mutedIcon: "#a09a91", railBorder: "rgba(28,26,34,.06)",
+        hoverPill: "rgba(28,26,34,.05)", avatarRing: "rgba(28,26,34,.1)",
+      }
+}
+
+const ACCENT = "#7a5af8"
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const [workspace, setWorkspace] = React.useState<Workspace>("operacion")
-  const sections = primaryNav[workspace]
+  const router = useRouter()
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+  const [expanded, setExpanded] = React.useState(true)
+  const [hoverIdx, setHoverIdx] = React.useState(-1)
+  const [tip, setTip] = React.useState({ x: 0, y: 0 })
+  const [activeSub, setActiveSub] = React.useState(0)
+  const [avatarOpen, setAvatarOpen] = React.useState(false)
+  const avatarRef = React.useRef<HTMLDivElement>(null)
   const user = useUsuarioActual()
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/")
+  React.useEffect(() => setMounted(true), [])
+
+  const dark = mounted && resolvedTheme === "dark"
+  const t = tokens(dark)
+  const accentSoft = hexA(ACCENT, dark ? 0.22 : 0.12)
+
+  const active = React.useMemo(() => {
+    const i = MODULOS.findIndex(
+      (m) => pathname === m.route || pathname.startsWith(m.route + "/")
+    )
+    return i === -1 ? 0 : i
+  }, [pathname])
+
+  React.useEffect(() => setActiveSub(0), [active])
+
+  React.useEffect(() => {
+    if (!avatarOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setAvatarOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onDown)
+    return () => document.removeEventListener("mousedown", onDown)
+  }, [avatarOpen])
+
+  const sec = MODULOS[active]
+  const initials = (user.name || "U")
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
+  function clickModulo(i: number) {
+    if (i === active && expanded) {
+      setExpanded(false)
+      return
+    }
+    setExpanded(true)
+    setActiveSub(0)
+    router.push(MODULOS[i].route)
+  }
+
+  function cerrarSesion() {
+    limpiarSesion()
+    router.push("/login")
+  }
+
+  const themeIcon = dark
+    ? "M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+    : "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="gap-3">
-        {/* Marca */}
-        <div className="flex items-center justify-between gap-2 px-1 pt-1">
-          <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <GekkoMark className="size-5" />
-            </span>
-            <div className="flex items-baseline gap-1 group-data-[collapsible=icon]:hidden">
-              <span className="text-base font-semibold">{siteConfig.shortName}</span>
-              <span className="text-xs text-sidebar-foreground/50">
-                {siteConfig.version}
-              </span>
+    <aside
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: expanded ? "330px" : "72px",
+        background: t.card,
+        borderRadius: 24,
+        boxShadow: "0 12px 40px rgba(20,15,35,.10)",
+        transition: "width .35s cubic-bezier(.4,0,.2,1), background .3s",
+        position: "relative",
+        flexShrink: 0,
+        fontFamily: "var(--font-sora), sans-serif",
+        ["--gk-hover" as string]: t.hoverPill,
+      } as React.CSSProperties}
+    >
+      <style>{GK_CSS}</style>
+      <div style={{ display: "flex", flex: 1, minHeight: 0, borderRadius: 24, overflow: "hidden" }}>
+        <div
+          style={{
+            width: 72, flexShrink: 0, display: "flex", flexDirection: "column",
+            alignItems: "center", padding: "14px 0", gap: 6,
+            borderRight: "1px solid " + t.railBorder,
+          }}
+        >
+          <div
+            style={{
+              width: 44, height: 44, borderRadius: 14,
+              background: "linear-gradient(135deg,#1c1a22,#35303f)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontWeight: 700, fontSize: 18, letterSpacing: "-.5px",
+            }}
+          >
+            {siteConfig.name.charAt(0)}
+          </div>
+          <div
+            onClick={() => setExpanded((e) => !e)}
+            title={expanded ? "Contraer panel" : "Expandir panel"}
+            className="gk-pill"
+            style={{
+              width: 44, height: 28, display: "flex", alignItems: "center",
+              justifyContent: "center", cursor: "pointer", color: t.mutedIcon,
+              marginBottom: 2, borderRadius: 9,
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "rotate(" + (expanded ? 180 : 0) + "deg)", transition: "transform .35s" }}>
+              <path d="M6 5l7 7-7 7" />
+              <path d="M13 5l7 7-7 7" />
+            </svg>
+          </div>
+          <div style={{ width: 28, height: 1, background: t.railBorder, marginBottom: 4 }} />
+
+          {MODULOS.map((m, i) => {
+            const isActive = i === active
+            const isHover = hoverIdx === i
+            return (
+              <div
+                key={m.route}
+                onClick={() => clickModulo(i)}
+                onMouseEnter={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect()
+                  setHoverIdx(i)
+                  setTip({ x: r.right + 12, y: r.top + r.height / 2 })
+                }}
+                onMouseLeave={() => setHoverIdx(-1)}
+                style={{
+                  width: 44, height: 44, borderRadius: 14, display: "flex",
+                  alignItems: "center", justifyContent: "center", cursor: "pointer",
+                  background: isActive ? accentSoft : isHover ? t.hoverPill : "transparent",
+                  color: isActive ? ACCENT : isHover ? t.text : t.mutedIcon,
+                  transform: "scale(" + (isHover ? 1.1 : 1) + ")",
+                  transition: "background .2s, color .2s, transform .15s",
+                }}
+              >
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={m.icon} />
+                  {m.icon2 ? <path d={m.icon2} /> : null}
+                </svg>
+              </div>
+            )
+          })}
+
+          <div style={{ flex: 1 }} />
+
+          <div
+            onClick={() => setTheme(dark ? "light" : "dark")}
+            title="Cambiar tema"
+            className="gk-pill"
+            style={{
+              width: 44, height: 44, borderRadius: 14, display: "flex",
+              alignItems: "center", justifyContent: "center", cursor: "pointer",
+              color: t.mutedIcon,
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d={themeIcon} />
+            </svg>
+          </div>
+
+          <div ref={avatarRef} style={{ position: "relative" }}>
+            <div
+              onClick={() => setAvatarOpen((v) => !v)}
+              style={{
+                width: 44, height: 44, borderRadius: "50%", cursor: "pointer",
+                padding: 2, border: "2px solid " + t.avatarRing, boxSizing: "border-box",
+                marginTop: 4,
+              }}
+            >
+              <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "linear-gradient(135deg,#e8683a,#f2a03d)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 600 }}>
+                {initials}
+              </div>
             </div>
-          </Link>
-        </div>
 
-        {/* Búsqueda */}
-        <div className="relative group-data-[collapsible=icon]:hidden">
-          <RiSearchLine className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sidebar-foreground/50" />
-          <SidebarInput placeholder="Buscar…" className="h-9 rounded-full pl-9" />
-        </div>
-
-        {/* Selector de espacio de trabajo */}
-        <WorkspaceSwitcher value={workspace} onValueChange={setWorkspace} />
-      </SidebarHeader>
-
-      <SidebarContent className="px-1">
-        {sections.map((section, i) => (
-          <SidebarGroup key={section.label ?? `section-${i}`}>
-            {section.label ? (
-              <SidebarGroupLabel className="uppercase tracking-wider">
-                {section.label}
-              </SidebarGroupLabel>
+            {avatarOpen ? (
+              <div
+                style={{
+                  position: "absolute", left: 6, bottom: 54, width: 200,
+                  background: t.popup, borderRadius: 16,
+                  boxShadow: "0 16px 40px rgba(20,15,35,.22)", padding: 8, zIndex: 50,
+                  border: "1px solid " + t.railBorder,
+                }}
+              >
+                <div style={{ padding: "10px 12px 8px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {user.name || "Invitado"}
+                  </div>
+                  <div style={{ fontSize: 11, color: t.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {user.email || "Sin sesión"}
+                  </div>
+                </div>
+                <div style={{ height: 1, background: t.railBorder, margin: "4px 8px" }} />
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div onClick={() => router.push("/configuracion")} className="gk-pill" style={{ padding: "9px 12px", borderRadius: 10, fontSize: 13, cursor: "pointer", color: t.text }}>Mi perfil</div>
+                  <div onClick={() => router.push("/configuracion")} className="gk-pill" style={{ padding: "9px 12px", borderRadius: 10, fontSize: 13, cursor: "pointer", color: t.text }}>Preferencias</div>
+                  <div onClick={cerrarSesion} className="gk-danger" style={{ padding: "9px 12px", borderRadius: 10, fontSize: 13, cursor: "pointer", color: "#d94f3d", transition: "background .2s" }}>Cerrar sesión</div>
+                </div>
+              </div>
             ) : null}
-            {section.label ? <SidebarSeparator className="mb-1" /> : null}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      isActive={isActive(item.href)}
-                      tooltip={item.title}
-                      render={<Link href={item.href} />}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                    {item.badge ? (
-                      <SidebarMenuBadge
-                        className={cn(
-                          "rounded-full px-1.5",
-                          badgeTone[item.badgeTone ?? "info"]
-                        )}
-                      >
-                        {item.badge}
-                      </SidebarMenuBadge>
-                    ) : null}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
+          </div>
+        </div>
 
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
-    </Sidebar>
+        <div
+          style={{
+            flex: 1, minWidth: 0, display: "flex", flexDirection: "column",
+            padding: "20px 18px", opacity: expanded ? 1 : 0,
+            transition: "opacity .25s .1s", pointerEvents: expanded ? "auto" : "none",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: t.text, whiteSpace: "nowrap" }}>{sec.label}</div>
+            <div
+              onClick={() => setExpanded(false)}
+              className="gk-pill"
+              style={{ width: 28, height: 28, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: t.mutedIcon }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 6l-6 6 6 6" /></svg>
+            </div>
+          </div>
+          <div style={{ fontSize: 11.5, color: t.muted, marginBottom: 18, whiteSpace: "nowrap" }}>{sec.desc}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {sec.subs.map((label, j) => {
+              const on = j === activeSub
+              return (
+                <div
+                  key={label}
+                  onClick={() => setActiveSub(j)}
+                  className={on ? undefined : "gk-pill"}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                    borderRadius: 12, cursor: "pointer", fontSize: 13.5, whiteSpace: "nowrap",
+                    fontWeight: on ? 600 : 400, color: on ? t.text : t.muted,
+                    background: on ? t.hoverPill : "transparent",
+                  }}
+                >
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: on ? ACCENT : "transparent" }} />
+                  {label}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "fixed", left: tip.x, top: tip.y, transform: "translateY(-50%)",
+          background: "#1c1a22", color: "#fff", fontSize: 11, fontWeight: 600,
+          padding: "7px 12px", borderRadius: 10, whiteSpace: "nowrap", pointerEvents: "none",
+          opacity: hoverIdx >= 0 ? 1 : 0, transition: "opacity .15s",
+          boxShadow: "0 8px 24px rgba(20,15,35,.25)", zIndex: 60,
+          fontFamily: "var(--font-sora), sans-serif",
+        }}
+      >
+        {hoverIdx >= 0 ? MODULOS[hoverIdx].label : ""}
+      </div>
+    </aside>
   )
 }
+
+const GK_CSS = `
+  .gk-pill{transition:background .2s,color .2s}
+  .gk-pill:hover{background:var(--gk-hover)}
+  .gk-danger:hover{background:rgba(217,79,61,.1)}
+`
