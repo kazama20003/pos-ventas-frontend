@@ -47,9 +47,13 @@ type MenuName = keyof typeof menuContent
 
 export function SiteHeader() {
   const [activeMenu, setActiveMenu] = React.useState<MenuName | null>(null)
+  const [isHeaderCompact, setIsHeaderCompact] = React.useState(false)
   const greetingRef = React.useRef<HTMLSpanElement>(null)
   const panelRef = React.useRef<HTMLDivElement>(null)
   const menuShellRef = React.useRef<HTMLDivElement>(null)
+  const lastScrollRef = React.useRef(0)
+  const scrollIdleRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const manualExpandRef = React.useRef(false)
 
   React.useEffect(() => {
     const animation = gsap.to(greetingRef.current, {
@@ -82,8 +86,72 @@ export function SiteHeader() {
     return () => context.revert()
   }, [activeMenu])
 
+  React.useEffect(() => {
+    const shell = menuShellRef.current
+    if (!shell) return
+
+    const restoreWidth = () => {
+      setIsHeaderCompact(false)
+      gsap.to(shell, {
+        width: 773,
+        duration: 0.48,
+        ease: "power3.out",
+        overwrite: true,
+      })
+    }
+
+    if (activeMenu) {
+      restoreWidth()
+      return
+    }
+
+    lastScrollRef.current = window.scrollY
+
+    const onScroll = () => {
+      const currentScroll = window.scrollY
+      const scrollingDown = currentScroll > lastScrollRef.current + 0.5
+      lastScrollRef.current = currentScroll
+
+      if (scrollingDown && !manualExpandRef.current && window.matchMedia("(min-width: 1024px)").matches) {
+        setIsHeaderCompact(true)
+        gsap.to(shell, {
+          width: 370,
+          duration: 0.42,
+          ease: "power3.out",
+          overwrite: true,
+        })
+      }
+
+      if (scrollIdleRef.current) clearTimeout(scrollIdleRef.current)
+      scrollIdleRef.current = setTimeout(() => {
+        manualExpandRef.current = false
+      }, 220)
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", onScroll)
+      if (scrollIdleRef.current) clearTimeout(scrollIdleRef.current)
+      restoreWidth()
+    }
+  }, [activeMenu])
+
+  const expandCompactHeader = () => {
+    const shell = menuShellRef.current
+    if (!shell) return
+
+    manualExpandRef.current = true
+    setIsHeaderCompact(false)
+    gsap.to(shell, {
+      width: 773,
+      duration: 0.48,
+      ease: "power3.out",
+      overwrite: true,
+    })
+  }
+
   return (
-    <header className="absolute inset-x-0 top-0 z-40 h-[92px] text-white">
+    <header className="fixed inset-x-0 top-0 z-40 h-[92px] text-white">
       <div className="relative mx-auto h-full max-w-[1920px] px-4 sm:px-8 lg:px-12">
         <Link
           href="/"
@@ -117,7 +185,10 @@ export function SiteHeader() {
         >
           <div className="flex h-12 w-full items-stretch">
             <nav className="flex flex-1 overflow-hidden rounded-[7px] bg-[#efefec]/95 text-[#111] shadow-[0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-sm">
-              <Link href="/" className="flex flex-1 flex-col justify-center rounded-l-[7px] px-4 leading-none hover:bg-white/45">
+              <Link
+                href="/"
+                className="flex flex-1 flex-col justify-center overflow-hidden rounded-l-[7px] px-4 leading-none transition-[width,opacity,padding] duration-300 hover:bg-white/45"
+              >
                 <span className="flex items-center gap-1 text-[13px] font-semibold">
                   <RiHomeFill className="size-3.5" />
                   Home
@@ -134,19 +205,44 @@ export function SiteHeader() {
                   onMouseEnter={() => setActiveMenu(menu)}
                   onFocus={() => setActiveMenu(menu)}
                   aria-expanded={activeMenu === menu}
-                  className={`flex min-w-[108px] items-center justify-center gap-1 px-3 text-[13px] capitalize transition-colors hover:bg-[#fff200]/70 ${activeMenu === menu ? "bg-[#fff200] underline underline-offset-4" : ""}`}
+                  tabIndex={isHeaderCompact ? -1 : undefined}
+                  className={`flex items-center justify-center gap-1 overflow-hidden text-[13px] capitalize transition-[width,min-width,opacity,padding,background-color] duration-300 hover:bg-[#fff200]/70 ${
+                    isHeaderCompact ? "pointer-events-none w-0 min-w-0 px-0 opacity-0" : "min-w-[108px] px-3 opacity-100"
+                  } ${activeMenu === menu ? "bg-[#fff200] underline underline-offset-4" : ""}`}
                 >
                   {menu}
                   <RiArrowDownSLine className={`size-3.5 transition-transform ${activeMenu === menu ? "rotate-180" : ""}`} />
                 </button>
               ))}
-              <Link href="/#precios" className="flex min-w-[82px] items-center justify-center px-3 text-[13px] hover:bg-white/50">
+              <Link
+                href="/#precios"
+                aria-hidden={isHeaderCompact}
+                tabIndex={isHeaderCompact ? -1 : undefined}
+                className={`flex items-center justify-center overflow-hidden text-[13px] transition-[width,min-width,opacity,padding] duration-300 hover:bg-white/50 ${
+                  isHeaderCompact ? "pointer-events-none w-0 min-w-0 px-0 opacity-0" : "min-w-[82px] px-3 opacity-100"
+                }`}
+              >
                 Precios
               </Link>
+              <button
+                type="button"
+                aria-label="Mostrar navegación completa"
+                onClick={expandCompactHeader}
+                tabIndex={isHeaderCompact ? 0 : -1}
+                className={`flex shrink-0 items-center justify-center overflow-hidden transition-[width,opacity] duration-300 hover:bg-white/55 ${
+                  isHeaderCompact ? "w-12 opacity-100" : "pointer-events-none w-0 opacity-0"
+                }`}
+              >
+                <RiMenuLine className="size-5" />
+              </button>
             </nav>
             <Link
               href="/register"
-              className="ml-2 flex min-w-[151px] items-center justify-center gap-2 rounded-[7px] border border-white/15 bg-black px-4 text-[12px] font-bold text-white transition-colors hover:bg-[#202020]"
+              aria-hidden={isHeaderCompact}
+              tabIndex={isHeaderCompact ? -1 : undefined}
+              className={`flex items-center justify-center gap-2 overflow-hidden rounded-[7px] border-white/15 bg-black text-[12px] font-bold text-white transition-[width,min-width,margin,opacity,padding,border-width] duration-300 hover:bg-[#202020] ${
+                isHeaderCompact ? "pointer-events-none ml-0 w-0 min-w-0 border-0 px-0 opacity-0" : "ml-2 min-w-[151px] border px-4 opacity-100"
+              }`}
             >
               EMPEZAR AHORA
               <span className="size-2 bg-[#19d3c5]" />

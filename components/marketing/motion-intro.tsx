@@ -34,19 +34,19 @@ export function MotionIntro() {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       if (reducedMotion) return
 
+      // La sección acelera únicamente durante la entrada para cubrir el hero;
+      // después vuelve al flujo normal, sin fijar ninguna de las dos superficies.
       gsap.fromTo(
         section,
-        { y: "14vh", borderTopLeftRadius: 38, borderTopRightRadius: 38 },
+        { y: "9vh" },
         {
           y: 0,
-          borderTopLeftRadius: 0,
-          borderTopRightRadius: 0,
           ease: "none",
           scrollTrigger: {
             trigger: section,
             start: "top bottom",
-            end: "top 18%",
-            scrub: 0.8,
+            end: "top 72%",
+            scrub: 0.7,
           },
         }
       )
@@ -90,7 +90,8 @@ export function MotionIntro() {
     <section
       ref={sectionRef}
       id="funciones"
-      className="relative z-20 -mt-px min-h-[115svh] overflow-hidden bg-[#090909] px-4 pb-20 pt-24 text-white will-change-transform sm:px-8 sm:pt-28 lg:px-12 lg:pt-32"
+      className="relative z-20 -mt-[15vh] min-h-[115svh] overflow-hidden border-0 bg-[#090909] px-4 pb-20 pt-24 text-white shadow-none sm:px-8 sm:pt-28 lg:px-12 lg:pt-32"
+      style={{ border: 0, borderRadius: 0, outline: "none" }}
     >
       <div className="mx-auto max-w-[1320px]">
         <p ref={eyebrowRef} className="flex items-center justify-center gap-3 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] text-white">

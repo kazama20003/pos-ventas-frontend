@@ -28,7 +28,7 @@ const features = [
 export default function LandingPage() {
   return (
     <>
-      <section id="producto" className="sticky top-0 isolate flex h-svh min-h-[600px] overflow-hidden bg-[#111] text-white">
+      <section id="producto" className="relative isolate h-[118svh] min-h-[708px] overflow-hidden bg-[#111] text-white">
         <Image
           src="/gekko-hero.jpg"
           alt="Venta en una tienda utilizando un punto de venta digital"
@@ -37,9 +37,9 @@ export default function LandingPage() {
           sizes="100vw"
           className="-z-20 object-cover object-center"
         />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(0deg,rgba(0,0,0,.72)_0%,rgba(0,0,0,.12)_58%,rgba(0,0,0,.24)_100%)]" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-black/25" />
 
-        <div className="relative flex w-full flex-1 items-end px-4 pb-6 sm:px-8 sm:pb-7 lg:px-12">
+        <div className="absolute inset-x-0 top-0 flex h-svh min-h-[600px] items-end px-4 pb-6 sm:px-8 sm:pb-7 lg:px-12">
           <h1 className="max-w-[900px] text-[clamp(2.5rem,4.15vw,4.9rem)] font-normal leading-[1.02] tracking-[-0.045em] text-white">
             Hacemos cada venta visible, medible y rentable. Tu tienda crece con decisiones claras.
           </h1>
