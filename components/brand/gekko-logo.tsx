@@ -1,35 +1,75 @@
+"use client"
+
+import * as React from "react"
+
 import { cn } from "@/lib/utils"
 import { siteConfig } from "@/lib/config/site"
 
 /**
- * Marca de Gekko: silueta estilizada de gecko (vista superior) con la cola
- * enroscada. Usa `currentColor`, por lo que hereda el color del contenedor.
+ * Marca dibujada en Canvas. La espiral forma una "g" y los cuatro apoyos
+ * mínimos sugieren el gekko sin convertirlo en una mascota ilustrada.
  */
 export function GekkoMark({ className }: { className?: string }) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null)
+
+  React.useLayoutEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const context = canvas.getContext("2d")
+    if (!context) return
+
+    const color = "#19D3C5"
+    const scale = 2
+    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.save()
+    context.scale(scale, scale)
+    context.strokeStyle = color
+    context.fillStyle = color
+    context.lineCap = "round"
+    context.lineJoin = "round"
+
+    // Anillo abierto: la lectura principal es una "G" tecnológica.
+    context.beginPath()
+    context.arc(50, 50, 34, Math.PI * 0.04, Math.PI * 1.96)
+    context.lineWidth = 12
+    context.stroke()
+
+    // Barra óptica de la G.
+    context.beginPath()
+    context.moveTo(58, 50)
+    context.lineTo(83, 50)
+    context.lineTo(83, 61)
+    context.lineTo(67, 61)
+    context.lineWidth = 10
+    context.stroke()
+
+    // Gekko abstracto: cabeza facetada y cuerpo curvo integrados al anillo.
+    context.beginPath()
+    context.moveTo(31, 68)
+    context.bezierCurveTo(27, 56, 30, 44, 38, 36)
+    context.lineTo(45, 29)
+    context.bezierCurveTo(48, 26, 52, 24, 56, 25)
+    context.lineTo(65, 27)
+    context.bezierCurveTo(69, 28, 70, 31, 68, 35)
+    context.lineTo(62, 43)
+    context.bezierCurveTo(59, 47, 55, 48, 52, 51)
+    context.bezierCurveTo(45, 58, 47, 67, 55, 71)
+    context.bezierCurveTo(46, 73, 38, 71, 31, 68)
+    context.closePath()
+    context.fill()
+
+    context.restore()
+  }, [])
+
   return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <canvas
+      ref={canvasRef}
+      width={200}
+      height={200}
+      className={cn("size-6 text-[#19D3C5]", className)}
       aria-hidden="true"
-      className={cn("size-6", className)}
-    >
-      {/* Cuerpo + cabeza + cola enroscada */}
-      <path
-        d="M24 5.5c-3 0-5.2 2.2-5.2 5.1 0 1.9 1 3.4 2.4 4.6-2.7 1.3-4.6 3.8-4.6 7 0 2.6 1.3 4.6 3.1 6-2.4 1-4.1 3-4.1 5.8 0 3.4 2.6 6 6 6 2.1 0 3.8-1 4.9-2.6 1.1 1.6 2.8 2.6 4.9 2.6 3.4 0 6-2.6 6-6 0-3.6-2.9-5.9-6-5.9-1 0-1.9.2-2.7.6.5-1 .8-2.1.8-3.3 0-2.6-1.3-4.6-3.1-6 1.8-1.4 3.1-3.4 3.1-6 0-1.2-.3-2.3-.8-3.3.8.4 1.7.6 2.7.6 1.4 0 2.5-1.1 2.5-2.5S32.3 7.5 30.9 7.5c-1.2 0-2.2.8-2.4 1.9C27.6 7 26 5.5 24 5.5Z"
-        fill="currentColor"
-      />
-      {/* Patas */}
-      <g stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-        <path d="M18.5 15.5 13 12" />
-        <path d="M29.5 15.5 35 12" />
-        <path d="M17 28 11 26.5" />
-        <path d="M31 28 37 26.5" />
-      </g>
-      {/* Ojos */}
-      <circle cx="21.8" cy="10.4" r="1.05" className="fill-background" />
-      <circle cx="26.2" cy="10.4" r="1.05" className="fill-background" />
-    </svg>
+    />
   )
 }
 
