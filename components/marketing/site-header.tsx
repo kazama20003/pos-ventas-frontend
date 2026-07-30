@@ -158,7 +158,7 @@ export function SiteHeader() {
           className="absolute left-4 top-[26px] flex items-start gap-3 sm:left-8 lg:left-12"
         >
           <span className="flex items-center gap-1 text-[21px] font-medium leading-none tracking-[-0.05em]">
-            <GekkoMark className="size-7 text-[#19D3C5]" />
+            <GekkoMark className="size-7 text-[var(--primary)]" />
             gek
           </span>
           <span className="hidden -translate-y-1 sm:block">
@@ -205,9 +205,9 @@ export function SiteHeader() {
                   onFocus={() => setActiveMenu(menu)}
                   aria-expanded={activeMenu === menu}
                   tabIndex={isHeaderCompact ? -1 : undefined}
-                  className={`flex items-center justify-center gap-1 overflow-hidden text-[13px] capitalize transition-[width,min-width,opacity,padding,background-color] duration-300 hover:bg-[#fff200]/70 ${
+                  className={`flex items-center justify-center gap-1 overflow-hidden text-[13px] capitalize transition-[width,min-width,opacity,padding,background-color] duration-300 hover:bg-[var(--primary)]/15 ${
                     isHeaderCompact ? "pointer-events-none w-0 min-w-0 px-0 opacity-0" : "min-w-[108px] px-3 opacity-100"
-                  } ${activeMenu === menu ? "bg-[#fff200] underline underline-offset-4" : ""}`}
+                  } ${activeMenu === menu ? "bg-[var(--primary)]/15 underline underline-offset-4" : ""}`}
                 >
                   {menu}
                   <RiArrowDownSLine className={`size-3.5 transition-transform ${activeMenu === menu ? "rotate-180" : ""}`} />
@@ -239,12 +239,12 @@ export function SiteHeader() {
               href="/register"
               aria-hidden={isHeaderCompact}
               tabIndex={isHeaderCompact ? -1 : undefined}
-              className={`flex items-center justify-center gap-2 overflow-hidden rounded-[7px] border-white/15 bg-black text-[12px] font-bold text-white transition-[width,min-width,margin,opacity,padding,border-width] duration-300 hover:bg-[#202020] ${
+              className={`flex items-center justify-center gap-2 overflow-hidden rounded-[7px] border-white/15 bg-[var(--primary)] text-[12px] font-bold text-[var(--primary-foreground)] transition-[width,min-width,margin,opacity,padding,border-width] duration-300 hover:bg-[var(--primary)]/90 ${
                 isHeaderCompact ? "pointer-events-none ml-0 w-0 min-w-0 border-0 px-0 opacity-0" : "ml-2 min-w-[151px] border px-4 opacity-100"
               }`}
             >
               EMPEZAR AHORA
-              <span className="size-2 bg-[#19d3c5]" />
+              <span className="size-2 bg-[var(--primary-foreground)]" />
             </Link>
           </div>
 
@@ -279,7 +279,7 @@ export function SiteHeader() {
                     <Link href="/reportes" className="block hover:underline">Consultar reportes</Link>
                   </div>
                 </div>
-                <div className="rounded-[9px] bg-[#fff200] p-5">
+                <div className="rounded-[9px] bg-[var(--primary)] p-5 text-[var(--primary-foreground)]">
                   <p className="max-w-sm text-[12px] leading-relaxed">Todo lo que necesitas para vender, controlar y hacer crecer tu negocio desde un solo lugar.</p>
                   <Link href="/register" className="mt-4 inline-block text-[14px] font-bold underline underline-offset-4">PROBAR GEK GRATIS</Link>
                   <div className="mt-6 flex gap-5 font-mono text-[10px] uppercase underline">
@@ -298,7 +298,7 @@ export function SiteHeader() {
             <RiSearchLine className="size-[22px]" />
           </Link>
           <Link href="/login" className="hidden text-[12px] font-semibold underline underline-offset-2 sm:block">ES</Link>
-          <Link href="/register" aria-label="Empezar ahora" className="flex size-9 items-center justify-center rounded-[3px] bg-black/80 lg:hidden">
+          <Link href="/register" aria-label="Empezar ahora" className="flex size-9 items-center justify-center rounded-[3px] bg-[var(--primary)] text-[var(--primary-foreground)] lg:hidden">
             <RiMenuLine className="size-5" />
           </Link>
         </div>

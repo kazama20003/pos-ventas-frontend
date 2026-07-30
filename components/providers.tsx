@@ -2,11 +2,13 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import Lenis from "lenis"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { AuthProvider } from "@/components/auth/auth-provider"
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -15,9 +17,10 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 0.9,
       smoothWheel: true,
-      wheelMultiplier: 0.9,
+      wheelMultiplier: 1.1,
+      touchMultiplier: 1.8,
     })
     const update = (time: number) => lenis.raf(time * 1000)
 
@@ -36,6 +39,15 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 },
+        },
+      })
+  )
+
   return (
     <NextThemesProvider
       attribute="class"
@@ -43,9 +55,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <TooltipProvider delay={200}>
-        <SmoothScroll>{children}</SmoothScroll>
-      </TooltipProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delay={200}>
+          <AuthProvider>
+            <SmoothScroll>{children}</SmoothScroll>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
     </NextThemesProvider>
   )
 }

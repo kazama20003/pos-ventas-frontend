@@ -128,3 +128,10 @@
     @apply font-sans;
   }
 }
+
+/* Animaciones del landing Hagem (portadas del diseño) */
+@keyframes hagem-riseIn { from { transform: translateY(110%); } to { transform: translateY(0); } }
+@keyframes hagem-fadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hagem-marqL { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes hagem-marqR { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+@keyframes hagem-spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

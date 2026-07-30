@@ -7,17 +7,19 @@ import { RiErrorWarningLine } from "@remixicon/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAuthContext } from "@/components/auth/auth-provider"
 import { registrarEmpresa } from "@/lib/api/onboarding"
-import { guardarSesion } from "@/lib/auth/session"
+import { guardarSesion, guardarPerfilDesdeIdToken } from "@/lib/auth/session"
 import { ApiError } from "@/lib/api/client"
 import { RUC_REGEX, TENANT_CODIGO_REGEX } from "@/lib/api/types"
 
 /**
- * Formulario de creación de empresa (onboarding). Se usa como paso posterior a
- * la autenticación con Google: recibe el `idToken` ya obtenido y crea el tenant.
+ * Formulario de creación de empresa (onboarding). Paso posterior a la
+ * autenticación con Google: recibe el `idToken` ya obtenido y crea el tenant.
  */
 export function OnboardingForm({ idToken }: { idToken: string }) {
   const router = useRouter()
+  const { refrescarPerfil } = useAuthContext()
   const [form, setForm] = React.useState({
     tenantNombre: "",
     tenantCodigo: "",
@@ -32,8 +34,7 @@ export function OnboardingForm({ idToken }: { idToken: string }) {
   const set = (k: keyof typeof form) => (v: string) =>
     setForm((f) => ({ ...f, [k]: v }))
 
-  const codigoOk =
-    form.tenantCodigo === "" || TENANT_CODIGO_REGEX.test(form.tenantCodigo)
+  const codigoOk = form.tenantCodigo === "" || TENANT_CODIGO_REGEX.test(form.tenantCodigo)
   const valido =
     codigoOk &&
     RUC_REGEX.test(form.empresaRuc) &&
@@ -56,7 +57,9 @@ export function OnboardingForm({ idToken }: { idToken: string }) {
         empresaRuc: form.empresaRuc,
         adminNombre: form.adminNombre || undefined,
       })
+      guardarPerfilDesdeIdToken(idToken)
       guardarSesion(res.tokens)
+      refrescarPerfil()
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo registrar")
@@ -77,54 +80,34 @@ export function OnboardingForm({ idToken }: { idToken: string }) {
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="tenantNombre">Nombre del negocio</Label>
-          <Input
-            id="tenantNombre"
-            placeholder="Mi Bodega"
-            value={form.tenantNombre}
-            onChange={(e) => set("tenantNombre")(e.target.value)}
-          />
+          <Input id="tenantNombre" placeholder="Mi Bodega" value={form.tenantNombre} onChange={(e) => set("tenantNombre")(e.target.value)} />
         </div>
 
         <div className="grid gap-2">
           <Label htmlFor="tenantCodigo">
-            Código de empresa{" "}
-            <span className="text-muted-foreground">(opcional)</span>
+            Código de empresa <span className="text-muted-foreground">(opcional)</span>
           </Label>
           <Input
             id="tenantCodigo"
             placeholder="se genera automáticamente"
             value={form.tenantCodigo}
             onChange={(e) => set("tenantCodigo")(e.target.value.trim())}
-            aria-invalid={
-              form.tenantCodigo.length > 0 &&
-              !TENANT_CODIGO_REGEX.test(form.tenantCodigo)
-            }
+            aria-invalid={form.tenantCodigo.length > 0 && !TENANT_CODIGO_REGEX.test(form.tenantCodigo)}
           />
           <p className="text-xs text-muted-foreground">
-            Si lo dejas vacío, lo generamos a partir del nombre. Se usa para
-            iniciar sesión.
+            Si lo dejas vacío, lo generamos a partir del nombre. Se usa para iniciar sesión.
           </p>
         </div>
 
         <div className="grid gap-2">
           <Label htmlFor="organizacionNombre">Organización</Label>
-          <Input
-            id="organizacionNombre"
-            placeholder="Mi Bodega S.A.C."
-            value={form.organizacionNombre}
-            onChange={(e) => set("organizacionNombre")(e.target.value)}
-          />
+          <Input id="organizacionNombre" placeholder="Mi Bodega S.A.C." value={form.organizacionNombre} onChange={(e) => set("organizacionNombre")(e.target.value)} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-2">
             <Label htmlFor="empresaRazonSocial">Razón social</Label>
-            <Input
-              id="empresaRazonSocial"
-              placeholder="Mi Bodega S.A.C."
-              value={form.empresaRazonSocial}
-              onChange={(e) => set("empresaRazonSocial")(e.target.value)}
-            />
+            <Input id="empresaRazonSocial" placeholder="Mi Bodega S.A.C." value={form.empresaRazonSocial} onChange={(e) => set("empresaRazonSocial")(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="empresaRuc">RUC</Label>
@@ -134,27 +117,17 @@ export function OnboardingForm({ idToken }: { idToken: string }) {
               inputMode="numeric"
               maxLength={11}
               value={form.empresaRuc}
-              onChange={(e) =>
-                set("empresaRuc")(e.target.value.replace(/\D/g, ""))
-              }
-              aria-invalid={
-                form.empresaRuc.length > 0 && !RUC_REGEX.test(form.empresaRuc)
-              }
+              onChange={(e) => set("empresaRuc")(e.target.value.replace(/\D/g, ""))}
+              aria-invalid={form.empresaRuc.length > 0 && !RUC_REGEX.test(form.empresaRuc)}
             />
           </div>
         </div>
 
         <div className="grid gap-2">
           <Label htmlFor="adminNombre">
-            Tu nombre{" "}
-            <span className="text-muted-foreground">(opcional)</span>
+            Tu nombre <span className="text-muted-foreground">(opcional)</span>
           </Label>
-          <Input
-            id="adminNombre"
-            placeholder="Tu nombre y apellido"
-            value={form.adminNombre}
-            onChange={(e) => set("adminNombre")(e.target.value)}
-          />
+          <Input id="adminNombre" placeholder="Tu nombre y apellido" value={form.adminNombre} onChange={(e) => set("adminNombre")(e.target.value)} />
         </div>
       </div>
 

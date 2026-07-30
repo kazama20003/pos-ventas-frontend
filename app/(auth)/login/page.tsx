@@ -1,19 +1,24 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { RiErrorWarningLine, RiArrowLeftLine, RiBuilding2Line } from "@remixicon/react"
+import {
+  RiErrorWarningLine,
+  RiArrowLeftLine,
+  RiArrowRightLine,
+  RiBuilding2Line,
+  RiCheckboxCircleFill,
+} from "@remixicon/react"
 
 import { Button } from "@/components/ui/button"
-import { GoogleButton } from "@/components/auth/google-button"
+import { GoogleButton, useGooglePrompt } from "@/components/auth/google-button"
 import { OnboardingForm } from "@/components/auth/onboarding-form"
+import { useAuthContext } from "@/components/auth/auth-provider"
 import { loginGoogle } from "@/lib/api/auth"
-import { guardarSesion } from "@/lib/auth/session"
+import { guardarSesion, guardarPerfilDesdeIdToken } from "@/lib/auth/session"
 import { ApiError } from "@/lib/api/client"
-import type {
-  SeleccionTenantRequerida,
-  TenantResumen,
-} from "@/lib/api/types"
+import type { SeleccionTenantRequerida, TenantResumen } from "@/lib/api/types"
 
 type Vista =
   | { tipo: "inicio" }
@@ -22,16 +27,22 @@ type Vista =
 
 export default function LoginPage() {
   const router = useRouter()
+  const { refrescarPerfil } = useAuthContext()
   const [vista, setVista] = React.useState<Vista>({ tipo: "inicio" })
   const [error, setError] = React.useState<string | null>(null)
   const [cargando, setCargando] = React.useState(false)
+  const [correo, setCorreo] = React.useState("")
+  const [novedades, setNovedades] = React.useState(true)
+  const [usarBotonGoogle, setUsarBotonGoogle] = React.useState(false)
 
   async function ingresar(idToken: string, tenantCodigo?: string) {
     setError(null)
     setCargando(true)
     try {
       const tokens = await loginGoogle({ idToken, tenantCodigo })
+      guardarPerfilDesdeIdToken(idToken)
       guardarSesion(tokens)
+      refrescarPerfil()
       router.push("/dashboard")
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
@@ -41,11 +52,7 @@ export default function LoginPage() {
           return
         }
         if (body?.codigo === "SELECCION_TENANT_REQUERIDA") {
-          setVista({
-            tipo: "seleccion",
-            idToken,
-            empresas: (body as SeleccionTenantRequerida).tenants,
-          })
+          setVista({ tipo: "seleccion", idToken, empresas: (body as SeleccionTenantRequerida).tenants })
           return
         }
       }
@@ -55,7 +62,10 @@ export default function LoginPage() {
     }
   }
 
-  // Cuenta sin empresa: crear una (onboarding con el idToken ya obtenido).
+  const { prompt, listo, error: errorGoogle } = useGooglePrompt((token) =>
+    ingresar(token)
+  )
+
   if (vista.tipo === "onboarding") {
     return (
       <div className="flex flex-col gap-6">
@@ -71,15 +81,12 @@ export default function LoginPage() {
     )
   }
 
-  // El correo pertenece a varias empresas: elegir.
   if (vista.tipo === "seleccion") {
     return (
       <div className="flex flex-col gap-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Elige tu empresa</h1>
-          <p className="text-sm text-muted-foreground">
-            Tu correo está asociado a varias empresas.
-          </p>
+          <p className="text-sm text-muted-foreground">Tu correo está asociado a varias empresas.</p>
         </div>
         {error ? <ErrorBox mensaje={error} /> : null}
         <div className="flex flex-col gap-2">
@@ -95,9 +102,7 @@ export default function LoginPage() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{t.nombre}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {t.codigo}
-                </span>
+                <span className="block truncate text-xs text-muted-foreground">{t.codigo}</span>
               </span>
             </button>
           ))}
@@ -107,23 +112,92 @@ export default function LoginPage() {
     )
   }
 
-  // Inicio: un solo botón de Google (sirve para entrar y para registrarse).
+  // Inicio — Google como acceso principal (entrar o registrarse).
   return (
-    <div className="flex flex-col gap-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Bienvenido a Gekko</h1>
+    <div className="flex flex-col gap-4">
+      <div className="space-y-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight">Iniciar sesión</h1>
         <p className="text-sm text-muted-foreground">
-          Entra con Google. Si aún no tienes empresa, podrás crearla enseguida.
+          Inicia sesión o crea una cuenta
         </p>
       </div>
 
       {error ? <ErrorBox mensaje={error} /> : null}
+      {errorGoogle ? <ErrorBox mensaje={errorGoogle} /> : null}
 
-      <GoogleButton onCredential={(token) => ingresar(token)} text="continue_with" />
+      <Button
+        size="lg"
+        className="h-12 w-full rounded-xl text-base font-semibold"
+        disabled={!listo || cargando}
+        onClick={() => prompt()}
+      >
+        Continuar con Google
+      </Button>
+
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">o</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          prompt(correo.trim() || undefined)
+        }}
+        className="relative"
+      >
+        <input
+          type="email"
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          placeholder="Correo electrónico"
+          autoComplete="email"
+          className="h-12 w-full rounded-xl border bg-background pl-4 pr-12 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+        />
+        <button
+          type="submit"
+          aria-label="Continuar"
+          disabled={!listo || cargando}
+          className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg transition-colors hover:bg-muted disabled:opacity-40"
+        >
+          <RiArrowRightLine className="size-4" />
+        </button>
+      </form>
+
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={novedades}
+        onClick={() => setNovedades((v) => !v)}
+        className="flex items-center gap-2 text-left text-sm"
+      >
+        {novedades ? (
+          <RiCheckboxCircleFill className="size-5 shrink-0 text-foreground" />
+        ) : (
+          <span className="size-5 shrink-0 rounded-full border-2 border-muted-foreground/40" />
+        )}
+        <span>Envíenme novedades y ofertas por correo</span>
+      </button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Detectamos tu empresa automáticamente a partir de tu correo.
+        Si continúas, aceptas nuestros{" "}
+        <Link href="/terminos" className="underline underline-offset-2">
+          Términos del servicio
+        </Link>
       </p>
+
+      {usarBotonGoogle ? (
+        <GoogleButton onCredential={(token) => ingresar(token)} text="signin_with" />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setUsarBotonGoogle(true)}
+          className="text-center text-xs text-muted-foreground underline underline-offset-2"
+        >
+          ¿No se abre la ventana de Google?
+        </button>
+      )}
     </div>
   )
 }

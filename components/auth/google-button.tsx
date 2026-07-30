@@ -7,6 +7,13 @@ const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 type CredentialResponse = { credential?: string }
 
+type InitConfig = {
+  client_id: string
+  callback: (res: CredentialResponse) => void
+  login_hint?: string
+  use_fedcm_for_prompt?: boolean
+}
+
 type GsiButtonConfig = {
   type?: "standard" | "icon"
   theme?: "outline" | "filled_blue" | "filled_black"
@@ -22,11 +29,7 @@ declare global {
     google?: {
       accounts: {
         id: {
-          initialize: (config: {
-            client_id: string
-            callback: (res: CredentialResponse) => void
-            use_fedcm_for_prompt?: boolean
-          }) => void
+          initialize: (config: InitConfig) => void
           renderButton: (parent: HTMLElement, options: GsiButtonConfig) => void
           prompt: () => void
         }
@@ -40,9 +43,7 @@ const GSI_SRC = "https://accounts.google.com/gsi/client"
 function cargarGsi(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (window.google?.accounts?.id) return resolve()
-    const existente = document.querySelector<HTMLScriptElement>(
-      `script[src="${GSI_SRC}"]`
-    )
+    const existente = document.querySelector<HTMLScriptElement>(`script[src="${GSI_SRC}"]`)
     if (existente) {
       existente.addEventListener("load", () => resolve())
       existente.addEventListener("error", () => reject())
@@ -59,9 +60,63 @@ function cargarGsi(): Promise<void> {
 }
 
 /**
- * Botón oficial de Google (Google Identity Services). Devuelve el `idToken`
- * (credential) que el backend verifica en /identidad/auth/google y /onboarding.
- * Usa NEXT_PUBLIC_GOOGLE_CLIENT_ID (debe coincidir con el del backend).
+ * Hook para disparar Google Sign-In desde un botón propio (One Tap / prompt).
+ * Devuelve el idToken (credential) en `onCredential`. `prompt(hint?)` acepta un
+ * correo como login_hint. Requiere NEXT_PUBLIC_GOOGLE_CLIENT_ID.
+ */
+export function useGooglePrompt(onCredential: (idToken: string) => void) {
+  const [listo, setListo] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const cbRef = React.useRef(onCredential)
+  cbRef.current = onCredential
+  const hintRef = React.useRef<string | undefined>(undefined)
+
+  const iniciar = React.useCallback((login_hint?: string) => {
+    if (!CLIENT_ID || !window.google) return
+    window.google.accounts.id.initialize({
+      client_id: CLIENT_ID,
+      callback: (res) => {
+        if (res.credential) cbRef.current(res.credential)
+      },
+      login_hint,
+      use_fedcm_for_prompt: true,
+    })
+    hintRef.current = login_hint
+  }, [])
+
+  React.useEffect(() => {
+    if (!CLIENT_ID) {
+      setError("Falta configurar NEXT_PUBLIC_GOOGLE_CLIENT_ID")
+      return
+    }
+    let cancelado = false
+    cargarGsi()
+      .then(() => {
+        if (cancelado) return
+        iniciar()
+        setListo(true)
+      })
+      .catch(() => setError("No se pudo cargar Google. Reintenta."))
+    return () => {
+      cancelado = true
+    }
+  }, [iniciar])
+
+  const prompt = React.useCallback(
+    (hint?: string) => {
+      if (!window.google) return
+      if (hint !== undefined && hint !== hintRef.current) iniciar(hint)
+      window.google.accounts.id.prompt()
+    },
+    [iniciar]
+  )
+
+  return { prompt, listo, error }
+}
+
+/**
+ * Botón oficial de Google (fallback cuando One Tap no se muestra).
+ * Su callback entrega el idToken que el backend verifica.
  */
 export function GoogleButton({
   onCredential,
@@ -83,7 +138,6 @@ export function GoogleButton({
       return
     }
     let cancelado = false
-
     cargarGsi()
       .then(() => {
         if (cancelado || !contenedor.current || !window.google) return
@@ -106,7 +160,6 @@ export function GoogleButton({
         })
       })
       .catch(() => setError("No se pudo cargar Google. Reintenta."))
-
     return () => {
       cancelado = true
     }
