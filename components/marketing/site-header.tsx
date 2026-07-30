@@ -53,7 +53,6 @@ export function SiteHeader() {
   const menuShellRef = React.useRef<HTMLDivElement>(null)
   const lastScrollRef = React.useRef(0)
   const scrollIdleRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const manualExpandRef = React.useRef(false)
 
   React.useEffect(() => {
     const animation = gsap.to(greetingRef.current, {
@@ -90,7 +89,7 @@ export function SiteHeader() {
     const shell = menuShellRef.current
     if (!shell) return
 
-    const restoreWidth = () => {
+    const restoreHeader = () => {
       setIsHeaderCompact(false)
       gsap.to(shell, {
         width: 773,
@@ -101,7 +100,7 @@ export function SiteHeader() {
     }
 
     if (activeMenu) {
-      restoreWidth()
+      restoreHeader()
       return
     }
 
@@ -109,10 +108,10 @@ export function SiteHeader() {
 
     const onScroll = () => {
       const currentScroll = window.scrollY
-      const scrollingDown = currentScroll > lastScrollRef.current + 0.5
+      const isScrolling = Math.abs(currentScroll - lastScrollRef.current) > 0.5
       lastScrollRef.current = currentScroll
 
-      if (scrollingDown && !manualExpandRef.current && window.matchMedia("(min-width: 1024px)").matches) {
+      if (isScrolling && window.matchMedia("(min-width: 1024px)").matches) {
         setIsHeaderCompact(true)
         gsap.to(shell, {
           width: 370,
@@ -124,7 +123,7 @@ export function SiteHeader() {
 
       if (scrollIdleRef.current) clearTimeout(scrollIdleRef.current)
       scrollIdleRef.current = setTimeout(() => {
-        manualExpandRef.current = false
+        restoreHeader()
       }, 220)
     }
 
@@ -132,16 +131,16 @@ export function SiteHeader() {
     return () => {
       window.removeEventListener("scroll", onScroll)
       if (scrollIdleRef.current) clearTimeout(scrollIdleRef.current)
-      restoreWidth()
+      restoreHeader()
     }
   }, [activeMenu])
 
-  const expandCompactHeader = () => {
+  const openCompactMenu = () => {
     const shell = menuShellRef.current
     if (!shell) return
 
-    manualExpandRef.current = true
     setIsHeaderCompact(false)
+    setActiveMenu("soluciones")
     gsap.to(shell, {
       width: 773,
       duration: 0.48,
@@ -226,8 +225,8 @@ export function SiteHeader() {
               </Link>
               <button
                 type="button"
-                aria-label="Mostrar navegación completa"
-                onClick={expandCompactHeader}
+                aria-label="Abrir menú de navegación"
+                onClick={openCompactMenu}
                 tabIndex={isHeaderCompact ? 0 : -1}
                 className={`flex shrink-0 items-center justify-center overflow-hidden transition-[width,opacity] duration-300 hover:bg-white/55 ${
                   isHeaderCompact ? "w-12 opacity-100" : "pointer-events-none w-0 opacity-0"
