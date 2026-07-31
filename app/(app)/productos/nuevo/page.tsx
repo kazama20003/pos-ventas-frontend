@@ -5,45 +5,50 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   RiArrowLeftLine,
+  RiBarcodeLine,
   RiBox3Line,
-  RiCheckLine,
   RiErrorWarningLine,
   RiFolder3Line,
+  RiImageLine,
+  RiMoneyDollarCircleLine,
   RiPriceTag3Line,
-  RiScales3Line,
   RiServiceLine,
   RiStackLine,
 } from "@remixicon/react"
 
+import { ImageUpload } from "@/components/productos/image-upload"
 import { PageHeader } from "@/components/layout/page-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select } from "@/components/ui/select"
 import { ApiError } from "@/lib/api/client"
 import {
   crearCategoria,
+  crearMarca,
   crearProducto,
   crearUnidad,
+  generarBarcodeInterno,
   listarCategorias,
   listarImpuestos,
+  listarMarcas,
+  listarProductos,
   listarUnidades,
+  type ComponenteComboDto,
+  type TipoCodigoBarras,
   type TipoProducto,
 } from "@/lib/api/catalogo"
 import { cn } from "@/lib/utils"
 
-/**
- * Unidades de medida frecuentes con su código SUNAT. Sirven como atajos: el
- * usuario elige "Kilo" sin saber que por debajo existe una tabla de unidades.
- */
 const UNIDADES_COMUNES = [
-  { codigo: "UND", nombre: "Por unidad", symbol: "u", sunatCode: "NIU" },
-  { codigo: "KGM", nombre: "Por kilo", symbol: "kg", sunatCode: "KGM" },
-  { codigo: "GRM", nombre: "Por gramo", symbol: "g", sunatCode: "GRM" },
-  { codigo: "LTR", nombre: "Por litro", symbol: "L", sunatCode: "LTR" },
-  { codigo: "MTR", nombre: "Por metro", symbol: "m", sunatCode: "MTR" },
-  { codigo: "CAJ", nombre: "Por caja", symbol: "caja", sunatCode: "BX" },
-  { codigo: "PAQ", nombre: "Por paquete", symbol: "paq", sunatCode: "PK" },
-  { codigo: "DOC", nombre: "Por docena", symbol: "doc", sunatCode: "DZN" },
+  { codigo: "UND", nombre: "Unidad", symbol: "u", sunatCode: "NIU" },
+  { codigo: "KGM", nombre: "Kilo", symbol: "kg", sunatCode: "KGM" },
+  { codigo: "GRM", nombre: "Gramo", symbol: "g", sunatCode: "GRM" },
+  { codigo: "LTR", nombre: "Litro", symbol: "L", sunatCode: "LTR" },
+  { codigo: "MTR", nombre: "Metro", symbol: "m", sunatCode: "MTR" },
+  { codigo: "CAJ", nombre: "Caja", symbol: "caja", sunatCode: "BX" },
+  { codigo: "PAQ", nombre: "Paquete", symbol: "paq", sunatCode: "PK" },
+  { codigo: "DOC", nombre: "Docena", symbol: "doc", sunatCode: "DZN" },
 ] as const
 
 const TIPOS: {
@@ -55,24 +60,33 @@ const TIPOS: {
   {
     value: "ESTANDAR",
     titulo: "Producto",
-    detalle: "Algo físico que vendes: comida, bebida, mercadería.",
+    detalle: "Algo físico: comida, bebida, mercadería.",
     icon: RiBox3Line,
   },
   {
     value: "SERVICIO",
     titulo: "Servicio",
-    detalle: "Un trabajo, no un objeto: corte, reparación, asesoría.",
+    detalle: "Un trabajo: corte, reparación, asesoría.",
     icon: RiServiceLine,
   },
   {
     value: "PAQUETE",
     titulo: "Combo",
-    detalle: "Varios productos vendidos juntos a un solo precio.",
+    detalle: "Varios productos a un solo precio.",
     icon: RiStackLine,
   },
 ]
 
-/** Deriva un código legible a partir del nombre: "Café Americano" → "CAFE-AMERICANO". */
+const CODIGO_BARRAS_TIPOS: { value: TipoCodigoBarras; label: string }[] = [
+  { value: "INTERNO", label: "Interno" },
+  { value: "EAN13", label: "EAN-13" },
+  { value: "EAN8", label: "EAN-8" },
+  { value: "UPC_A", label: "UPC-A" },
+  { value: "CODIGO128", label: "Code 128" },
+  { value: "QR", label: "QR" },
+  { value: "PLU", label: "PLU (balanza)" },
+]
+
 function sugerirCodigo(nombre: string) {
   return nombre
     .normalize("NFD")
@@ -83,31 +97,43 @@ function sugerirCodigo(nombre: string) {
     .slice(0, 24)
 }
 
-function Seccion({
-  paso,
+function money(v: string | number) {
+  const n = typeof v === "string" ? parseFloat(v) : v
+  return Number.isFinite(n) ? n.toFixed(2) : "0.00"
+}
+
+/** Tarjeta de sección con cabecera compacta (icono + título). */
+function Card({
   titulo,
   ayuda,
   icon: Icon,
   children,
+  className,
 }: {
-  paso: number
   titulo: string
-  ayuda: string
-  icon: React.ComponentType<{ className?: string }>
+  ayuda?: string
+  icon?: React.ComponentType<{ className?: string }>
   children: React.ReactNode
+  className?: string
 }) {
   return (
-    <section className="rounded-3xl border bg-card p-5 shadow-sm ring-1 ring-foreground/5">
-      <div className="mb-4 flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Icon className="size-5" />
-        </span>
+    <section
+      className={cn(
+        "rounded-2xl border bg-card p-5 shadow-sm ring-1 ring-foreground/5",
+        className
+      )}
+    >
+      <div className="mb-4 flex items-center gap-2.5">
+        {Icon ? (
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Icon className="size-4" />
+          </span>
+        ) : null}
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Paso {paso}
-          </p>
-          <h2 className="text-base font-semibold leading-tight">{titulo}</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{ayuda}</p>
+          <h2 className="text-sm font-semibold leading-tight">{titulo}</h2>
+          {ayuda ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">{ayuda}</p>
+          ) : null}
         </div>
       </div>
       {children}
@@ -115,8 +141,55 @@ function Seccion({
   )
 }
 
-const selectCls =
-  "h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
+function Campo({
+  label,
+  hint,
+  children,
+  className,
+}: {
+  label: string
+  hint?: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <Label className="text-xs font-medium text-muted-foreground">
+        {label}
+        {hint ? <span className="ml-1 font-normal">· {hint}</span> : null}
+      </Label>
+      {children}
+    </div>
+  )
+}
+
+function MoneyInput({
+  id,
+  value,
+  onChange,
+  className,
+}: {
+  id: string
+  value: string
+  onChange: (v: string) => void
+  className?: string
+}) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+        S/
+      </span>
+      <Input
+        id={id}
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, ""))}
+        placeholder="0.00"
+        className={cn("pl-9 tabular-nums", className)}
+      />
+    </div>
+  )
+}
 
 export default function NuevoProductoPage() {
   const router = useRouter()
@@ -125,28 +198,49 @@ export default function NuevoProductoPage() {
   const unidades = useQuery({ queryKey: ["unidades"], queryFn: listarUnidades })
   const impuestos = useQuery({ queryKey: ["impuestos"], queryFn: listarImpuestos })
   const categorias = useQuery({ queryKey: ["categorias"], queryFn: listarCategorias })
+  const marcas = useQuery({ queryKey: ["marcas"], queryFn: listarMarcas })
+  const productos = useQuery({
+    queryKey: ["productos", "combo"],
+    queryFn: () => listarProductos({ pageSize: 100 }),
+  })
 
   const [nombre, setNombre] = React.useState("")
   const [codigo, setCodigo] = React.useState("")
-  const [codigoTocado, setCodigoTocado] = React.useState(false)
+  const [mostrarCodigo, setMostrarCodigo] = React.useState(false)
+  const [descripcion, setDescripcion] = React.useState("")
+  const [imagenUrl, setImagenUrl] = React.useState("")
   const [tipo, setTipo] = React.useState<TipoProducto>("ESTANDAR")
   const [unidadCodigo, setUnidadCodigo] = React.useState<string>("UND")
+  const [precio, setPrecio] = React.useState("")
   const [costo, setCosto] = React.useState("")
+  const [barcode, setBarcode] = React.useState("")
+  const [barcodeTipo, setBarcodeTipo] = React.useState<TipoCodigoBarras>("INTERNO")
+  const [stockInicial, setStockInicial] = React.useState("")
   const [categoriaId, setCategoriaId] = React.useState("")
   const [impuestoId, setImpuestoId] = React.useState("")
+  const [marcaId, setMarcaId] = React.useState("")
+  const [combo, setCombo] = React.useState<Record<string, number>>({})
 
-  // Sugerir código automáticamente mientras el usuario no lo edite a mano.
-  const codigoMostrado = codigoTocado ? codigo : sugerirCodigo(nombre)
+  const genBarcode = useMutation({
+    mutationFn: generarBarcodeInterno,
+    onSuccess: (r) => {
+      setBarcode(r.codigo)
+      setBarcodeTipo(r.tipo)
+    },
+  })
+
+  const codigoPreview = sugerirCodigo(nombre) || "PROD"
+  const esServicio = tipo === "SERVICIO"
+  const esCombo = tipo === "PAQUETE"
 
   const guardar = useMutation({
     mutationFn: async () => {
-      // 1) Asegurar que la unidad elegida existe; si es un atajo, crearla.
       const preset = UNIDADES_COMUNES.find((u) => u.codigo === unidadCodigo)
       let unidadId = unidades.data?.find((u) => u.codigo === unidadCodigo)?.id
       if (!unidadId && preset) {
         const creada = await crearUnidad({
           codigo: preset.codigo,
-          nombre: preset.nombre.replace(/^Por /, ""),
+          nombre: preset.nombre,
           symbol: preset.symbol,
           sunatCode: preset.sunatCode,
         })
@@ -154,18 +248,32 @@ export default function NuevoProductoPage() {
       }
       if (!unidadId) throw new Error("Selecciona cómo se vende el producto")
 
-      const cod = (codigoTocado ? codigo : sugerirCodigo(nombre)).trim()
+      const codManual = mostrarCodigo ? codigo.trim() : ""
+      const componentes: ComponenteComboDto[] = Object.entries(combo)
+        .filter(([, cant]) => cant > 0)
+        .map(([varianteId, cantidad]) => ({ varianteId, cantidad }))
+
       return crearProducto({
-        codigo: cod,
+        codigo: codManual || undefined,
         nombre: nombre.trim(),
+        descripcion: descripcion.trim() || undefined,
         kind: tipo,
+        marcaId: marcaId || undefined,
+        imagenUrl: imagenUrl.trim() || undefined,
         categoriaIds: categoriaId ? [categoriaId] : [],
+        componentes: esCombo && componentes.length ? componentes : undefined,
         variantes: [
           {
             unidadMedidaId: unidadId,
-            sku: cod,
+            sku: codManual || undefined,
             nombre: nombre.trim(),
+            precio: precio ? parseFloat(precio) : undefined,
             cost: costo ? parseFloat(costo) : undefined,
+            barcode: barcode.trim() || undefined,
+            barcodeTipo: barcode.trim() ? barcodeTipo : undefined,
+            stockInicial:
+              !esServicio && stockInicial ? parseFloat(stockInicial) : undefined,
+            isStockTracked: !esServicio,
             impuestoIds: impuestoId ? [impuestoId] : [],
           },
         ],
@@ -178,7 +286,6 @@ export default function NuevoProductoPage() {
     },
   })
 
-  // Crear categoría rápida sin salir de la página.
   const [nuevaCat, setNuevaCat] = React.useState(false)
   const [catNombre, setCatNombre] = React.useState("")
   const mCategoria = useMutation({
@@ -195,8 +302,36 @@ export default function NuevoProductoPage() {
     },
   })
 
-  const valido = nombre.trim().length > 0 && codigoMostrado.length > 0
+  const [nuevaMarca, setNuevaMarca] = React.useState(false)
+  const [marcaNombre, setMarcaNombre] = React.useState("")
+  const mMarca = useMutation({
+    mutationFn: () => crearMarca({ nombre: marcaNombre.trim() }),
+    onSuccess: (m) => {
+      qc.invalidateQueries({ queryKey: ["marcas"] })
+      setMarcaId(m.id)
+      setNuevaMarca(false)
+      setMarcaNombre("")
+    },
+  })
+
+  const valido = nombre.trim().length > 0
   const error = guardar.error as ApiError | Error | null
+  const ganancia =
+    precio && costo && parseFloat(precio) >= parseFloat(costo)
+      ? parseFloat(precio) - parseFloat(costo)
+      : null
+
+  const variantesDisponibles = React.useMemo(
+    () =>
+      (productos.data?.items ?? []).flatMap((p) =>
+        p.variants.map((v) => ({
+          id: v.id,
+          etiqueta: `${p.nombre}${v.nombre && v.nombre !== p.nombre ? ` · ${v.nombre}` : ""}`,
+          sku: v.sku,
+        }))
+      ),
+    [productos.data]
+  )
 
   function enviar(e: React.FormEvent) {
     e.preventDefault()
@@ -207,7 +342,7 @@ export default function NuevoProductoPage() {
     <>
       <PageHeader
         title="Nuevo producto"
-        description="Completa los datos. Los pasos con “opcional” puedes dejarlos en blanco."
+        description="Completa los datos. Lo marcado como opcional puedes dejarlo en blanco."
         actions={
           <Button variant="ghost" size="sm" onClick={() => router.push("/productos")}>
             <RiArrowLeftLine />
@@ -217,243 +352,344 @@ export default function NuevoProductoPage() {
       />
 
       <div className="flex-1 overflow-auto p-4 md:p-6">
-        <form onSubmit={enviar} className="mx-auto flex max-w-2xl flex-col gap-4 pb-24">
+        <form onSubmit={enviar} className="w-full pb-24">
           {error ? (
-            <div className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="mb-4 flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
               <RiErrorWarningLine className="mt-0.5 size-4 shrink-0" />
               <span>{error.message}</span>
             </div>
           ) : null}
 
-          {/* Paso 1 — Información básica */}
-          <Seccion
-            paso={1}
-            titulo="¿Qué vas a vender?"
-            ayuda="Escribe el nombre tal como quieres que aparezca en la boleta."
-            icon={RiPriceTag3Line}
-          >
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nombre">Nombre del producto</Label>
-                <Input
-                  id="nombre"
-                  autoFocus
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej: Café americano"
-                  className="h-11 text-base"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="codigo">
-                  Código{" "}
-                  <span className="font-normal text-muted-foreground">
-                    · lo usamos para identificarlo, puedes dejar el sugerido
-                  </span>
-                </Label>
-                <Input
-                  id="codigo"
-                  value={codigoMostrado}
-                  onChange={(e) => {
-                    setCodigoTocado(true)
-                    setCodigo(e.target.value)
-                  }}
-                  placeholder="CAFE-AMERICANO"
-                  className="font-mono"
-                />
-              </div>
-            </div>
-          </Seccion>
-
-          {/* Paso 2 — Tipo */}
-          <Seccion
-            paso={2}
-            titulo="¿Qué tipo es?"
-            ayuda="Elige la opción que mejor lo describa."
-            icon={RiBox3Line}
-          >
-            <div className="grid gap-3 sm:grid-cols-3">
-              {TIPOS.map((t) => {
-                const activo = tipo === t.value
-                return (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setTipo(t.value)}
-                    className={cn(
-                      "flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-colors",
-                      activo
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "hover:bg-muted/40"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex size-9 items-center justify-center rounded-xl",
-                        activo
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+            {/* ===== Columna principal ===== */}
+            <div className="flex min-w-0 flex-col gap-4">
+              <Card
+                titulo="Información básica"
+                ayuda="Cómo aparece en la boleta."
+                icon={RiPriceTag3Line}
+              >
+                <div className="grid gap-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Campo label="Nombre del producto">
+                      <Input
+                        autoFocus
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
+                        placeholder="Ej: Café americano"
+                        className="h-11 text-base"
+                      />
+                    </Campo>
+                    <Campo label="Código" hint="se genera solo">
+                      {mostrarCodigo ? (
+                        <div className="flex gap-2">
+                          <Input
+                            value={codigo}
+                            onChange={(e) => setCodigo(e.target.value)}
+                            placeholder={codigoPreview}
+                            className="h-11 font-mono"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 shrink-0"
+                            onClick={() => {
+                              setMostrarCodigo(false)
+                              setCodigo("")
+                            }}
+                          >
+                            Auto
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex h-11 items-center justify-between gap-3 rounded-xl bg-muted/40 px-3">
+                          <span className="truncate font-mono text-sm font-medium">
+                            {codigoPreview}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setMostrarCodigo(true)}
+                            className="shrink-0 text-xs font-medium text-primary underline-offset-2 hover:underline"
+                          >
+                            Personalizar
+                          </button>
+                        </div>
                       )}
-                    >
-                      <t.icon className="size-4" />
-                    </span>
-                    <span className="text-sm font-semibold">{t.titulo}</span>
-                    <span className="text-xs leading-snug text-muted-foreground">
-                      {t.detalle}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </Seccion>
+                    </Campo>
+                  </div>
 
-          {/* Paso 3 — Unidad de medida */}
-          <Seccion
-            paso={3}
-            titulo="¿Cómo lo vendes?"
-            ayuda="Selecciona la forma en que lo entregas al cliente."
-            icon={RiScales3Line}
-          >
-            <div className="flex flex-wrap gap-2">
-              {UNIDADES_COMUNES.map((u) => {
-                const activo = unidadCodigo === u.codigo
-                return (
-                  <button
-                    key={u.codigo}
-                    type="button"
-                    onClick={() => setUnidadCodigo(u.codigo)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors",
-                      activo
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "hover:bg-muted/50"
+                  <Campo label="Descripción" hint="opcional">
+                    <textarea
+                      value={descripcion}
+                      onChange={(e) => setDescripcion(e.target.value)}
+                      rows={2}
+                      placeholder="Detalle visible en cotizaciones/tickets…"
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
+                    />
+                  </Campo>
+
+                  <Campo label="Tipo de producto">
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {TIPOS.map((t) => {
+                        const activo = tipo === t.value
+                        return (
+                          <button
+                            key={t.value}
+                            type="button"
+                            onClick={() => setTipo(t.value)}
+                            className={cn(
+                              "flex items-start gap-2.5 rounded-xl border p-3 text-left transition-colors",
+                              activo
+                                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                : "hover:bg-muted/40"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                                activo
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              <t.icon className="size-4" />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold">
+                                {t.titulo}
+                              </span>
+                              <span className="block text-xs leading-snug text-muted-foreground">
+                                {t.detalle}
+                              </span>
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </Campo>
+                </div>
+              </Card>
+
+              <Card
+                titulo="Precio y venta"
+                ayuda="Precio al público, costo y cómo se vende."
+                icon={RiMoneyDollarCircleLine}
+              >
+                <div className="grid gap-4">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <Campo label="Precio de venta">
+                      <MoneyInput
+                        id="precio"
+                        value={precio}
+                        onChange={setPrecio}
+                        className="h-11 text-base"
+                      />
+                    </Campo>
+                    <Campo label="Costo" hint="opcional">
+                      <MoneyInput id="costo" value={costo} onChange={setCosto} className="h-11" />
+                    </Campo>
+                    <Campo label="Unidad">
+                      <Select
+                        value={unidadCodigo}
+                        onChange={setUnidadCodigo}
+                        options={UNIDADES_COMUNES.map((u) => ({
+                          value: u.codigo,
+                          label: `${u.nombre} (${u.symbol})`,
+                        }))}
+                      />
+                    </Campo>
+                    {!esServicio ? (
+                      <Campo label="Stock inicial" hint="opcional">
+                        <Input
+                          inputMode="decimal"
+                          value={stockInicial}
+                          onChange={(e) =>
+                            setStockInicial(e.target.value.replace(/[^\d.]/g, ""))
+                          }
+                          placeholder="0"
+                          className="h-11 tabular-nums"
+                        />
+                      </Campo>
+                    ) : (
+                      <div className="hidden lg:block" />
                     )}
-                  >
-                    {activo ? <RiCheckLine className="size-4" /> : null}
-                    {u.nombre}
-                  </button>
-                )
-              })}
-            </div>
-          </Seccion>
+                  </div>
 
-          {/* Paso 4 — Costo (opcional) */}
-          <Seccion
-            paso={4}
-            titulo="Costo (opcional)"
-            ayuda="Cuánto te cuesta a ti conseguirlo. Sirve para calcular tu ganancia."
-            icon={RiPriceTag3Line}
-          >
-            <div className="grid gap-2 sm:max-w-xs">
-              <Label htmlFor="costo">Costo por {UNIDADES_COMUNES.find((u) => u.codigo === unidadCodigo)?.symbol ?? "unidad"}</Label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  S/
-                </span>
-                <Input
-                  id="costo"
-                  inputMode="decimal"
-                  value={costo}
-                  onChange={(e) => setCosto(e.target.value.replace(/[^\d.]/g, ""))}
-                  placeholder="0.00"
-                  className="pl-9 tabular-nums"
-                />
-              </div>
-            </div>
-          </Seccion>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+                    <Campo label="Código de barras" hint="opcional">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <RiBarcodeLine className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            value={barcode}
+                            onChange={(e) => setBarcode(e.target.value)}
+                            placeholder="7501234567890"
+                            className="pl-9 font-mono"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="shrink-0"
+                          disabled={genBarcode.isPending}
+                          onClick={() => genBarcode.mutate()}
+                          title="Generar código de barras interno (EAN-13)"
+                        >
+                          {genBarcode.isPending ? "…" : "Generar"}
+                        </Button>
+                      </div>
+                    </Campo>
+                    <Campo label="Tipo de código">
+                      <Select
+                        value={barcodeTipo}
+                        onChange={(v) => setBarcodeTipo(v as TipoCodigoBarras)}
+                        options={CODIGO_BARRAS_TIPOS.map((t) => ({
+                          value: t.value,
+                          label: t.label,
+                        }))}
+                      />
+                    </Campo>
+                  </div>
 
-          {/* Paso 5 — Organización (opcional) */}
-          <Seccion
-            paso={5}
-            titulo="Grupo (opcional)"
-            ayuda="Agrupa productos parecidos para encontrarlos más rápido. Ej: Bebidas, Snacks."
-            icon={RiFolder3Line}
-          >
-            {nuevaCat ? (
-              <div className="flex flex-col gap-3 rounded-2xl bg-muted/40 p-3 sm:flex-row sm:items-end">
-                <div className="grid flex-1 gap-2">
-                  <Label htmlFor="catNombre">Nombre del grupo</Label>
-                  <Input
-                    id="catNombre"
-                    value={catNombre}
-                    onChange={(e) => setCatNombre(e.target.value)}
-                    placeholder="Ej: Bebidas"
-                  />
-                  {mCategoria.error ? (
-                    <p className="text-xs text-destructive">
-                      {(mCategoria.error as ApiError).message}
+                  {ganancia !== null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Ganancia por unidad:{" "}
+                      <span className="font-medium text-foreground">
+                        S/ {money(ganancia)}
+                      </span>
                     </p>
                   ) : null}
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setNuevaCat(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={!catNombre.trim() || mCategoria.isPending}
-                    onClick={() => mCategoria.mutate()}
-                  >
-                    {mCategoria.isPending ? "Creando…" : "Crear grupo"}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <select
-                  className={selectCls}
-                  value={categoriaId}
-                  onChange={(e) => setCategoriaId(e.target.value)}
-                >
-                  <option value="">Sin grupo</option>
-                  {categorias.data?.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={() => setNuevaCat(true)}
-                >
-                  + Nuevo grupo
-                </Button>
-              </div>
-            )}
-          </Seccion>
+              </Card>
 
-          {/* Paso 6 — Impuesto (opcional) */}
-          <Seccion
-            paso={6}
-            titulo="Impuesto (opcional)"
-            ayuda="Si este producto lleva IGV, selecciónalo. Si no estás seguro, déjalo en blanco."
-            icon={RiPriceTag3Line}
-          >
-            <select
-              className={selectCls}
-              value={impuestoId}
-              onChange={(e) => setImpuestoId(e.target.value)}
-            >
-              <option value="">Sin impuesto</option>
-              {impuestos.data?.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nombre} ({t.codigo})
-                </option>
-              ))}
-            </select>
-          </Seccion>
+              {esCombo ? (
+                <Card
+                  titulo="¿Qué incluye el combo?"
+                  ayuda="Elige los productos y su cantidad."
+                  icon={RiStackLine}
+                >
+                  {variantesDisponibles.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Primero crea productos sueltos para armar el combo.
+                    </p>
+                  ) : (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {variantesDisponibles.map((v) => {
+                        const cant = combo[v.id] ?? 0
+                        return (
+                          <div
+                            key={v.id}
+                            className={cn(
+                              "flex items-center gap-3 rounded-xl border p-2.5 transition-colors",
+                              cant > 0 ? "border-primary bg-primary/5" : ""
+                            )}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{v.etiqueta}</p>
+                              <p className="font-mono text-xs text-muted-foreground">
+                                {v.sku}
+                              </p>
+                            </div>
+                            <Input
+                              inputMode="decimal"
+                              value={cant ? String(cant) : ""}
+                              onChange={(e) => {
+                                const n = parseFloat(e.target.value.replace(/[^\d.]/g, ""))
+                                setCombo((prev) => ({
+                                  ...prev,
+                                  [v.id]: Number.isFinite(n) ? n : 0,
+                                }))
+                              }}
+                              placeholder="0"
+                              className="h-9 w-16 tabular-nums"
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </Card>
+              ) : null}
+            </div>
+
+            {/* ===== Panel lateral ===== */}
+            <div className="flex flex-col gap-4">
+              <Card titulo="Foto" ayuda="Se reconoce rápido en caja." icon={RiImageLine}>
+                <ImageUpload value={imagenUrl} onChange={setImagenUrl} />
+              </Card>
+
+              <Card titulo="Organización" ayuda="Opcional." icon={RiFolder3Line}>
+                <div className="grid gap-4">
+                  <Campo label="Marca">
+                    {nuevaMarca ? (
+                      <QuickCreate
+                        value={marcaNombre}
+                        onChange={setMarcaNombre}
+                        placeholder="Ej: Coca-Cola"
+                        pending={mMarca.isPending}
+                        error={(mMarca.error as ApiError)?.message}
+                        onCancel={() => setNuevaMarca(false)}
+                        onCreate={() => mMarca.mutate()}
+                      />
+                    ) : (
+                      <SelectConAgregar
+                        value={marcaId}
+                        onChange={setMarcaId}
+                        onAdd={() => setNuevaMarca(true)}
+                        placeholder="Sin marca"
+                        options={(marcas.data ?? []).map((m) => ({
+                          value: m.id,
+                          label: m.nombre,
+                        }))}
+                      />
+                    )}
+                  </Campo>
+
+                  <Campo label="Grupo / categoría">
+                    {nuevaCat ? (
+                      <QuickCreate
+                        value={catNombre}
+                        onChange={setCatNombre}
+                        placeholder="Ej: Bebidas"
+                        pending={mCategoria.isPending}
+                        error={(mCategoria.error as ApiError)?.message}
+                        onCancel={() => setNuevaCat(false)}
+                        onCreate={() => mCategoria.mutate()}
+                      />
+                    ) : (
+                      <SelectConAgregar
+                        value={categoriaId}
+                        onChange={setCategoriaId}
+                        onAdd={() => setNuevaCat(true)}
+                        placeholder="Sin grupo"
+                        options={(categorias.data ?? []).map((c) => ({
+                          value: c.id,
+                          label: c.nombre,
+                        }))}
+                      />
+                    )}
+                  </Campo>
+
+                  <Campo label="Impuesto">
+                    <Select
+                      value={impuestoId}
+                      onChange={setImpuestoId}
+                      placeholder="Sin impuesto"
+                      options={[
+                        { value: "", label: "Sin impuesto" },
+                        ...(impuestos.data ?? []).map((t) => ({
+                          value: t.id,
+                          label: `${t.nombre} (${t.codigo})`,
+                        })),
+                      ]}
+                    />
+                  </Campo>
+                </div>
+              </Card>
+            </div>
+          </div>
         </form>
       </div>
 
-      {/* Barra de acción fija */}
       <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 backdrop-blur-md md:px-6">
         <Button variant="ghost" onClick={() => router.push("/productos")}>
           Cancelar
@@ -463,5 +699,72 @@ export default function NuevoProductoPage() {
         </Button>
       </div>
     </>
+  )
+}
+
+function SelectConAgregar({
+  value,
+  onChange,
+  onAdd,
+  placeholder,
+  options,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onAdd: () => void
+  placeholder: string
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <div className="flex gap-2">
+      <Select
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        options={[{ value: "", label: placeholder }, ...options]}
+      />
+      <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={onAdd}>
+        +
+      </Button>
+    </div>
+  )
+}
+
+function QuickCreate({
+  value,
+  onChange,
+  placeholder,
+  pending,
+  error,
+  onCancel,
+  onCreate,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+  pending: boolean
+  error?: string
+  onCancel: () => void
+  onCreate: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-muted/40 p-3">
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={!value.trim() || pending}
+          onClick={onCreate}
+        >
+          {pending ? "Creando…" : "Crear"}
+        </Button>
+      </div>
+    </div>
   )
 }

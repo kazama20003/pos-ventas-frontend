@@ -7,27 +7,121 @@ import { useTheme } from "next-themes"
 import { siteConfig } from "@/lib/config/site"
 import { useAuthContext } from "@/components/auth/auth-provider"
 
+type Sub = { label: string; route: string }
 type Modulo = {
   label: string
   desc: string
   route: string
   icon: string
   icon2?: string
-  subs: string[]
+  subs: Sub[]
 }
 
+// Riel de navegación. Los módulos de uso diario quedan visibles con su propio
+// ícono; solo se agrupan las vistas secundarias afines (transferencias bajo
+// inventario, proveedores bajo compras, empresas/plan bajo organización).
+// Los sub-ítems apuntan únicamente a páginas reales.
 const MODULOS: Modulo[] = [
-  { label: "Dashboard", desc: "Resumen general del negocio", route: "/dashboard", icon: "M3 3h8v8H3zM13 3h8v5h-8zM13 12h8v9h-8zM3 15h8v6H3z", subs: ["Resumen del día", "Actividad reciente", "Metas"] },
-  { label: "Ventas", desc: "Punto de venta y transacciones", route: "/ventas", icon: "M4 5h2l2.2 10.5a1 1 0 0 0 1 .8h8.6a1 1 0 0 0 1-.78L21 9H6.4", icon2: "M9.5 20h.01M17.5 20h.01", subs: ["Nueva venta", "Historial", "Devoluciones", "Cotizaciones"] },
-  { label: "Productos", desc: "Catálogo y precios", route: "/productos", icon: "M21 8l-9-5-9 5v8l9 5 9-5V8z", icon2: "M3 8l9 5 9-5M12 13v8", subs: ["Catálogo", "Categorías", "Listas de precios", "Promociones"] },
-  { label: "Inventario", desc: "Stock y movimientos", route: "/inventario", icon: "M3 4h18v4H3z", icon2: "M5 8v12h14V8M10 12h4", subs: ["Stock actual", "Entradas", "Ajustes", "Kardex"] },
-  { label: "Clientes", desc: "Directorio y créditos", route: "/clientes", icon: "M16 19v-1a4 4 0 0 0-8 0v1", icon2: "M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", subs: ["Directorio", "Créditos", "Cuentas por cobrar"] },
-  { label: "Proveedores", desc: "Compras y cuentas por pagar", route: "/proveedores", icon: "M1 3h15v13H1z", icon2: "M16 8h4l3 3v5h-7M5.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z", subs: ["Directorio", "Cuentas por pagar"] },
-  { label: "Compras", desc: "Órdenes y recepciones", route: "/compras", icon: "M6 2l-3 4v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z", icon2: "M3 6h18M16 10a4 4 0 0 1-8 0", subs: ["Órdenes", "Recepciones", "Pagos"] },
-  { label: "Caja", desc: "Turnos y arqueos", route: "/caja", icon: "M2 7h20v10H2z", icon2: "M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5.5 10.5h.01M18.5 13.5h.01", subs: ["Apertura / cierre", "Movimientos", "Cortes de caja"] },
-  { label: "Facturación", desc: "Comprobantes electrónicos", route: "/facturacion", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", icon2: "M14 2v6h6M9 13h6M9 17h4", subs: ["Comprobantes", "Notas de crédito", "Series"] },
-  { label: "Reportes", desc: "Análisis y exportaciones", route: "/reportes", icon: "M4 20h16", icon2: "M7 20v-6M12 20V9M17 20v-4", subs: ["Ventas", "Inventario", "Utilidades", "Impuestos"] },
-  { label: "Configuración", desc: "Ajustes del sistema", route: "/configuracion", icon: "M4 8h10M18 8h2M4 16h4M12 16h8", icon2: "M14 6v4M8 14v4", subs: ["General", "Sucursales", "Usuarios y roles", "Facturación"] },
+  {
+    label: "Dashboard",
+    desc: "Resumen general del negocio",
+    route: "/dashboard",
+    icon: "M3 3h8v8H3zM13 3h8v5h-8zM13 12h8v9h-8zM3 15h8v6H3z",
+    subs: [{ label: "Resumen", route: "/dashboard" }],
+  },
+  {
+    label: "Ventas",
+    desc: "Punto de venta y transacciones",
+    route: "/ventas",
+    icon: "M4 5h2l2.2 10.5a1 1 0 0 0 1 .8h8.6a1 1 0 0 0 1-.78L21 9H6.4",
+    icon2: "M9.5 20h.01M17.5 20h.01",
+    subs: [{ label: "Punto de venta", route: "/ventas" }],
+  },
+  {
+    label: "Caja",
+    desc: "Turnos y arqueos",
+    route: "/caja",
+    icon: "M2 7h20v10H2z",
+    icon2: "M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5.5 10.5h.01M18.5 13.5h.01",
+    subs: [{ label: "Caja", route: "/caja" }],
+  },
+  {
+    label: "Productos",
+    desc: "Catálogo y precios",
+    route: "/productos",
+    icon: "M21 8l-9-5-9 5v8l9 5 9-5V8z",
+    icon2: "M3 8l9 5 9-5M12 13v8",
+    subs: [{ label: "Catálogo", route: "/productos" }],
+  },
+  {
+    label: "Inventario",
+    desc: "Stock y movimientos entre almacenes",
+    route: "/inventario",
+    icon: "M3 4h18v4H3z",
+    icon2: "M5 8v12h14V8M10 12h4",
+    subs: [
+      { label: "Stock consolidado", route: "/inventario" },
+      { label: "Transferencias", route: "/transferencias" },
+      { label: "Conteos físicos", route: "/inventario/conteos" },
+      { label: "Reservas", route: "/inventario/reservas" },
+    ],
+  },
+  {
+    label: "Clientes",
+    desc: "Directorio y cuentas por cobrar",
+    route: "/clientes",
+    icon: "M16 19v-1a4 4 0 0 0-8 0v1",
+    icon2: "M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+    subs: [{ label: "Directorio", route: "/clientes" }],
+  },
+  {
+    label: "Compras",
+    desc: "Órdenes, recepciones y proveedores",
+    route: "/compras",
+    icon: "M6 2l-3 4v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z",
+    icon2: "M3 6h18M16 10a4 4 0 0 1-8 0",
+    subs: [
+      { label: "Órdenes de compra", route: "/compras" },
+      { label: "Proveedores", route: "/proveedores" },
+    ],
+  },
+  {
+    label: "Facturación",
+    desc: "Comprobantes electrónicos",
+    route: "/facturacion",
+    icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z",
+    icon2: "M14 2v6h6M9 13h6M9 17h4",
+    subs: [{ label: "Comprobantes", route: "/facturacion" }],
+  },
+  {
+    label: "Reportes",
+    desc: "Análisis y exportaciones",
+    route: "/reportes",
+    icon: "M4 20h16",
+    icon2: "M7 20v-6M12 20V9M17 20v-4",
+    subs: [{ label: "Reportes", route: "/reportes" }],
+  },
+  {
+    label: "Organización",
+    desc: "Sucursales, empresas y plan",
+    route: "/sucursales",
+    icon: "M3 21h18M6 21V7l6-4 6 4v14",
+    icon2: "M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01",
+    subs: [
+      { label: "Sucursales y almacenes", route: "/sucursales" },
+      { label: "Empresas", route: "/empresas" },
+      { label: "Usuarios y permisos", route: "/usuarios" },
+      { label: "Suscripción", route: "/suscripcion" },
+    ],
+  },
+  {
+    label: "Configuración",
+    desc: "Ajustes del sistema",
+    route: "/configuracion",
+    icon: "M4 8h10M18 8h2M4 16h4M12 16h8",
+    icon2: "M14 6v4M8 14v4",
+    subs: [{ label: "General", route: "/configuracion" }],
+  },
 ]
 
 const ACCENT = "var(--primary)"
@@ -46,21 +140,31 @@ export function AppSidebar() {
   const [expanded, setExpanded] = React.useState(true)
   const [hoverIdx, setHoverIdx] = React.useState(-1)
   const [tip, setTip] = React.useState({ x: 0, y: 0 })
-  const [activeSub, setActiveSub] = React.useState(0)
   const [avatarOpen, setAvatarOpen] = React.useState(false)
   const avatarRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => setMounted(true), [])
   const dark = mounted && resolvedTheme === "dark"
 
+  const matchRuta = React.useCallback(
+    (route: string) => pathname === route || pathname.startsWith(route + "/"),
+    [pathname]
+  )
+
+  // Módulo activo: coincide su ruta o la de alguno de sus sub-ítems.
   const active = React.useMemo(() => {
     const i = MODULOS.findIndex(
-      (m) => pathname === m.route || pathname.startsWith(m.route + "/")
+      (m) => matchRuta(m.route) || m.subs.some((s) => matchRuta(s.route))
     )
     return i === -1 ? 0 : i
-  }, [pathname])
+  }, [matchRuta])
 
-  React.useEffect(() => setActiveSub(0), [active])
+  // Sub-ítem activo derivado de la URL (sin estado ni efecto).
+  const activeSub = React.useMemo(() => {
+    const subs = MODULOS[active].subs
+    const j = subs.findIndex((s) => matchRuta(s.route))
+    return j === -1 ? 0 : j
+  }, [active, matchRuta])
 
   React.useEffect(() => {
     if (!avatarOpen) return
@@ -85,7 +189,6 @@ export function AppSidebar() {
       return
     }
     setExpanded(true)
-    setActiveSub(0)
     router.push(MODULOS[i].route)
   }
 
@@ -258,12 +361,12 @@ export function AppSidebar() {
           </div>
           <div style={{ fontSize: 11.5, color: MUTED, marginBottom: 18, whiteSpace: "nowrap" }}>{sec.desc}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {sec.subs.map((label, j) => {
+            {sec.subs.map((sub, j) => {
               const on = j === activeSub
               return (
                 <div
-                  key={label}
-                  onClick={() => setActiveSub(j)}
+                  key={sub.label}
+                  onClick={() => router.push(sub.route)}
                   className={on ? undefined : "gk-pill"}
                   style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
@@ -273,7 +376,7 @@ export function AppSidebar() {
                   }}
                 >
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: on ? ACCENT : "transparent" }} />
-                  {label}
+                  {sub.label}
                 </div>
               )
             })}
