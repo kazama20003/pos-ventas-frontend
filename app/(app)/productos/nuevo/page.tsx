@@ -38,8 +38,6 @@ import {
   type TipoCodigoBarras,
   type TipoProducto,
 } from "@/lib/api/catalogo"
-import { listarAlmacenes, type Almacen } from "@/lib/api/organizacion"
-import { useSucursalActiva } from "@/hooks/use-sucursal-activa"
 import { cn } from "@/lib/utils"
 
 const UNIDADES_COMUNES = [
@@ -97,11 +95,6 @@ function sugerirCodigo(nombre: string) {
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 24)
-}
-
-function money(v: string | number) {
-  const n = typeof v === "string" ? parseFloat(v) : v
-  return Number.isFinite(n) ? n.toFixed(2) : "0.00"
 }
 
 /** Tarjeta de sección con cabecera compacta (icono + título). */
@@ -214,11 +207,8 @@ export default function NuevoProductoPage() {
   const [tipo, setTipo] = React.useState<TipoProducto>("ESTANDAR")
   const [unidadCodigo, setUnidadCodigo] = React.useState<string>("UND")
   const [precio, setPrecio] = React.useState("")
-  const [costo, setCosto] = React.useState("")
   const [barcode, setBarcode] = React.useState("")
   const [barcodeTipo, setBarcodeTipo] = React.useState<TipoCodigoBarras>("INTERNO")
-  const [stockInicial, setStockInicial] = React.useState("")
-  const [almacenId, setAlmacenId] = React.useState("")
   const [categoriaId, setCategoriaId] = React.useState("")
   const [impuestoId, setImpuestoId] = React.useState("")
   const [marcaId, setMarcaId] = React.useState("")
@@ -235,21 +225,6 @@ export default function NuevoProductoPage() {
   const codigoPreview = sugerirCodigo(nombre) || "PROD"
   const esServicio = tipo === "SERVICIO"
   const esCombo = tipo === "PAQUETE"
-
-  // Almacenes de la sucursal activa (para el stock inicial).
-  const { sucursalId } = useSucursalActiva()
-  const almacenesQ = useQuery({
-    queryKey: ["almacenes", sucursalId],
-    queryFn: () => listarAlmacenes(sucursalId!),
-    enabled: !!sucursalId && !esServicio,
-  })
-  const almacenes = React.useMemo(
-    () => (almacenesQ.data ?? []).filter((a: Almacen) => a.estado === "ACTIVO"),
-    [almacenesQ.data]
-  )
-  const almacenPredet =
-    almacenes.find((a) => a.esPredeterminado)?.id ?? almacenes[0]?.id ?? ""
-  const almacenEfectivo = almacenId || almacenPredet
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -279,10 +254,6 @@ export default function NuevoProductoPage() {
         marcaId: marcaId || undefined,
         imagenUrl: imagenUrl.trim() || undefined,
         categoriaIds: categoriaId ? [categoriaId] : [],
-        almacenId:
-          !esServicio && stockInicial && parseFloat(stockInicial) > 0
-            ? almacenEfectivo || undefined
-            : undefined,
         componentes: esCombo && componentes.length ? componentes : undefined,
         variantes: [
           {
@@ -290,11 +261,8 @@ export default function NuevoProductoPage() {
             sku: codManual || undefined,
             nombre: nombre.trim(),
             precio: precio ? parseFloat(precio) : undefined,
-            cost: costo ? parseFloat(costo) : undefined,
             barcode: barcode.trim() || undefined,
             barcodeTipo: barcode.trim() ? barcodeTipo : undefined,
-            stockInicial:
-              !esServicio && stockInicial ? parseFloat(stockInicial) : undefined,
             isStockTracked: !esServicio,
             impuestoIds: impuestoId ? [impuestoId] : [],
           },
@@ -338,10 +306,6 @@ export default function NuevoProductoPage() {
 
   const valido = nombre.trim().length > 0
   const error = guardar.error as ApiError | Error | null
-  const ganancia =
-    precio && costo && parseFloat(precio) >= parseFloat(costo)
-      ? parseFloat(precio) - parseFloat(costo)
-      : null
 
   const variantesDisponibles = React.useMemo(
     () =>
@@ -493,11 +457,11 @@ export default function NuevoProductoPage() {
 
               <Card
                 titulo="Precio y venta"
-                ayuda="Precio al público, costo y cómo se vende."
+                ayuda="Precio al público y cómo se vende."
                 icon={RiMoneyDollarCircleLine}
               >
                 <div className="grid gap-4">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <Campo label="Precio de venta">
                       <MoneyInput
                         id="precio"
@@ -505,9 +469,6 @@ export default function NuevoProductoPage() {
                         onChange={setPrecio}
                         className="h-11 text-base"
                       />
-                    </Campo>
-                    <Campo label="Costo" hint="se actualiza con las compras">
-                      <MoneyInput id="costo" value={costo} onChange={setCosto} className="h-11" />
                     </Campo>
                     <Campo label="Unidad">
                       <Select
@@ -519,42 +480,17 @@ export default function NuevoProductoPage() {
                         }))}
                       />
                     </Campo>
-                    {!esServicio ? (
-                      <Campo label="Stock inicial" hint="opcional">
-                        <Input
-                          inputMode="decimal"
-                          value={stockInicial}
-                          onChange={(e) =>
-                            setStockInicial(e.target.value.replace(/[^\d.]/g, ""))
-                          }
-                          placeholder="0"
-                          className="h-11 tabular-nums"
-                        />
-                      </Campo>
-                    ) : (
-                      <div className="hidden lg:block" />
-                    )}
                   </div>
 
-                  {/* Almacén destino del stock inicial (hay varios) */}
-                  {!esServicio &&
-                  stockInicial &&
-                  parseFloat(stockInicial) > 0 &&
-                  almacenes.length > 1 ? (
-                    <div className="grid gap-4 sm:grid-cols-[280px_1fr]">
-                      <Campo label="Cargar stock en" hint="almacén">
-                        <Select
-                          value={almacenEfectivo}
-                          onChange={setAlmacenId}
-                          options={almacenes.map((a) => ({
-                            value: a.id,
-                            label: a.nombre,
-                            hint: a.esPredeterminado ? "predeterminado" : a.codigo,
-                          }))}
-                        />
-                      </Campo>
-                      <div className="hidden sm:block" />
-                    </div>
+                  {!esServicio ? (
+                    <p className="flex items-start gap-2 rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
+                      <RiBox3Line className="mt-0.5 size-4 shrink-0" />
+                      El <span className="font-medium text-foreground">stock</span> y el{" "}
+                      <span className="font-medium text-foreground">costo</span> se cargan
+                      al recibir mercadería en{" "}
+                      <span className="font-medium text-foreground">Compras</span> (el costo
+                      se promedia solo). El producto es solo el catálogo.
+                    </p>
                   ) : null}
 
                   <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
@@ -592,15 +528,6 @@ export default function NuevoProductoPage() {
                       />
                     </Campo>
                   </div>
-
-                  {ganancia !== null ? (
-                    <p className="text-xs text-muted-foreground">
-                      Ganancia por unidad:{" "}
-                      <span className="font-medium text-foreground">
-                        S/ {money(ganancia)}
-                      </span>
-                    </p>
-                  ) : null}
                 </div>
               </Card>
 
