@@ -407,3 +407,14 @@ export type CrearMarcaDto = { codigo?: string; nombre: string }
 
 export const crearMarca = (dto: CrearMarcaDto) =>
   authedFetch<Marca>("/catalogo/marcas", { method: "POST", body: dto })
+
+export const actualizarMarca = (id: string, nombre: string) =>
+  authedFetch<Marca>(`/catalogo/marcas/${id}`, {
+    method: "PATCH",
+    body: { nombre },
+  })
+
+export const archivarMarca = (id: string) =>
+  authedFetch<{ id: string; estado: string }>(`/catalogo/marcas/${id}`, {
+    method: "DELETE",
+  })

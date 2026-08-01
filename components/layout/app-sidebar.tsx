@@ -6,6 +6,8 @@ import { useTheme } from "next-themes"
 
 import { siteConfig } from "@/lib/config/site"
 import { useAuthContext } from "@/components/auth/auth-provider"
+import { usePermisos } from "@/hooks/use-permisos"
+import { SucursalSwitcher } from "@/components/layout/sucursal-switcher"
 
 type Sub = { label: string; route: string }
 type Modulo = {
@@ -15,6 +17,8 @@ type Modulo = {
   icon: string
   icon2?: string
   subs: Sub[]
+  /** Si se define, el módulo solo se ve si el usuario tiene alguno de estos permisos. */
+  perm?: string[]
 }
 
 // Riel de navegación. Los módulos de uso diario quedan visibles con su propio
@@ -36,6 +40,7 @@ const MODULOS: Modulo[] = [
     icon: "M4 5h2l2.2 10.5a1 1 0 0 0 1 .8h8.6a1 1 0 0 0 1-.78L21 9H6.4",
     icon2: "M9.5 20h.01M17.5 20h.01",
     subs: [{ label: "Punto de venta", route: "/ventas" }],
+    perm: ["ventas.crear", "ventas.devolver"],
   },
   {
     label: "Caja",
@@ -44,6 +49,7 @@ const MODULOS: Modulo[] = [
     icon: "M2 7h20v10H2z",
     icon2: "M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5.5 10.5h.01M18.5 13.5h.01",
     subs: [{ label: "Caja", route: "/caja" }],
+    perm: ["caja.abrir", "caja.cerrar"],
   },
   {
     label: "Productos",
@@ -51,7 +57,11 @@ const MODULOS: Modulo[] = [
     route: "/productos",
     icon: "M21 8l-9-5-9 5v8l9 5 9-5V8z",
     icon2: "M3 8l9 5 9-5M12 13v8",
-    subs: [{ label: "Catálogo", route: "/productos" }],
+    subs: [
+      { label: "Catálogo", route: "/productos" },
+      { label: "Marcas", route: "/marcas" },
+    ],
+    perm: ["catalogo.listar", "catalogo.crear", "catalogo.editar"],
   },
   {
     label: "Inventario",
@@ -65,6 +75,7 @@ const MODULOS: Modulo[] = [
       { label: "Conteos físicos", route: "/inventario/conteos" },
       { label: "Reservas", route: "/inventario/reservas" },
     ],
+    perm: ["inventario.listar", "inventario.ajustar", "inventario.transferir"],
   },
   {
     label: "Clientes",
@@ -73,6 +84,7 @@ const MODULOS: Modulo[] = [
     icon: "M16 19v-1a4 4 0 0 0-8 0v1",
     icon2: "M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
     subs: [{ label: "Directorio", route: "/clientes" }],
+    perm: ["clientes.listar", "clientes.crear"],
   },
   {
     label: "Compras",
@@ -84,6 +96,7 @@ const MODULOS: Modulo[] = [
       { label: "Órdenes de compra", route: "/compras" },
       { label: "Proveedores", route: "/proveedores" },
     ],
+    perm: ["compras.listar", "compras.crear", "proveedores.listar"],
   },
   {
     label: "Facturación",
@@ -92,6 +105,7 @@ const MODULOS: Modulo[] = [
     icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z",
     icon2: "M14 2v6h6M9 13h6M9 17h4",
     subs: [{ label: "Comprobantes", route: "/facturacion" }],
+    perm: ["facturacion.leer", "facturacion.emitir"],
   },
   {
     label: "Reportes",
@@ -100,6 +114,7 @@ const MODULOS: Modulo[] = [
     icon: "M4 20h16",
     icon2: "M7 20v-6M12 20V9M17 20v-4",
     subs: [{ label: "Reportes", route: "/reportes" }],
+    perm: ["reportes.leer"],
   },
   {
     label: "Organización",
@@ -110,8 +125,17 @@ const MODULOS: Modulo[] = [
     subs: [
       { label: "Sucursales y almacenes", route: "/sucursales" },
       { label: "Empresas", route: "/empresas" },
-      { label: "Usuarios y permisos", route: "/usuarios" },
+      { label: "Usuarios", route: "/usuarios" },
+      { label: "Roles y permisos", route: "/roles" },
       { label: "Suscripción", route: "/suscripcion" },
+    ],
+    perm: [
+      "sucursales.leer",
+      "sucursales.gestionar",
+      "empresas.leer",
+      "usuarios.listar",
+      "roles.listar",
+      "suscripcion.leer",
     ],
   },
   {
@@ -146,25 +170,33 @@ export function AppSidebar() {
   React.useEffect(() => setMounted(true), [])
   const dark = mounted && resolvedTheme === "dark"
 
+  const { can } = usePermisos()
+
   const matchRuta = React.useCallback(
     (route: string) => pathname === route || pathname.startsWith(route + "/"),
     [pathname]
   )
 
+  // Módulos visibles según los permisos del usuario (gating de UI).
+  const mods = React.useMemo(
+    () => MODULOS.filter((m) => !m.perm || can(...m.perm)),
+    [can]
+  )
+
   // Módulo activo: coincide su ruta o la de alguno de sus sub-ítems.
   const active = React.useMemo(() => {
-    const i = MODULOS.findIndex(
+    const i = mods.findIndex(
       (m) => matchRuta(m.route) || m.subs.some((s) => matchRuta(s.route))
     )
     return i === -1 ? 0 : i
-  }, [matchRuta])
+  }, [mods, matchRuta])
 
   // Sub-ítem activo derivado de la URL (sin estado ni efecto).
   const activeSub = React.useMemo(() => {
-    const subs = MODULOS[active].subs
+    const subs = mods[active]?.subs ?? []
     const j = subs.findIndex((s) => matchRuta(s.route))
     return j === -1 ? 0 : j
-  }, [active, matchRuta])
+  }, [mods, active, matchRuta])
 
   React.useEffect(() => {
     if (!avatarOpen) return
@@ -177,7 +209,7 @@ export function AppSidebar() {
     return () => document.removeEventListener("mousedown", onDown)
   }, [avatarOpen])
 
-  const sec = MODULOS[active]
+  const sec = mods[active]
   const nombre = user?.name || "Invitado"
   const correo = user?.email || "Sin sesión"
   const foto = user?.picture
@@ -189,7 +221,7 @@ export function AppSidebar() {
       return
     }
     setExpanded(true)
-    router.push(MODULOS[i].route)
+    router.push(mods[i].route)
   }
 
   function cerrarSesion() {
@@ -254,7 +286,7 @@ export function AppSidebar() {
           <div style={{ width: 28, height: 1, background: BORDER, marginBottom: 4 }} />
 
           <div className="no-scrollbar" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, overflowY: "auto", flexShrink: 1, minHeight: 0 }}>
-            {MODULOS.map((m, i) => {
+            {mods.map((m, i) => {
               const isActive = i === active
               const isHover = hoverIdx === i
               return (
@@ -349,6 +381,9 @@ export function AppSidebar() {
             transition: "opacity .25s .1s", pointerEvents: expanded ? "auto" : "none",
           }}
         >
+          <div style={{ marginBottom: 16 }}>
+            <SucursalSwitcher />
+          </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: TEXT, whiteSpace: "nowrap" }}>{sec.label}</div>
             <div
@@ -394,7 +429,7 @@ export function AppSidebar() {
           fontFamily: "var(--font-sora), sans-serif",
         }}
       >
-        {hoverIdx >= 0 ? MODULOS[hoverIdx].label : ""}
+        {hoverIdx >= 0 ? (mods[hoverIdx]?.label ?? "") : ""}
       </div>
     </aside>
   )

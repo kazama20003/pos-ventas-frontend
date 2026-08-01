@@ -38,6 +38,8 @@ import {
   type TipoCodigoBarras,
   type TipoProducto,
 } from "@/lib/api/catalogo"
+import { listarAlmacenes, type Almacen } from "@/lib/api/organizacion"
+import { useSucursalActiva } from "@/hooks/use-sucursal-activa"
 import { cn } from "@/lib/utils"
 
 const UNIDADES_COMUNES = [
@@ -216,6 +218,7 @@ export default function NuevoProductoPage() {
   const [barcode, setBarcode] = React.useState("")
   const [barcodeTipo, setBarcodeTipo] = React.useState<TipoCodigoBarras>("INTERNO")
   const [stockInicial, setStockInicial] = React.useState("")
+  const [almacenId, setAlmacenId] = React.useState("")
   const [categoriaId, setCategoriaId] = React.useState("")
   const [impuestoId, setImpuestoId] = React.useState("")
   const [marcaId, setMarcaId] = React.useState("")
@@ -232,6 +235,21 @@ export default function NuevoProductoPage() {
   const codigoPreview = sugerirCodigo(nombre) || "PROD"
   const esServicio = tipo === "SERVICIO"
   const esCombo = tipo === "PAQUETE"
+
+  // Almacenes de la sucursal activa (para el stock inicial).
+  const { sucursalId } = useSucursalActiva()
+  const almacenesQ = useQuery({
+    queryKey: ["almacenes", sucursalId],
+    queryFn: () => listarAlmacenes(sucursalId!),
+    enabled: !!sucursalId && !esServicio,
+  })
+  const almacenes = React.useMemo(
+    () => (almacenesQ.data ?? []).filter((a: Almacen) => a.estado === "ACTIVO"),
+    [almacenesQ.data]
+  )
+  const almacenPredet =
+    almacenes.find((a) => a.esPredeterminado)?.id ?? almacenes[0]?.id ?? ""
+  const almacenEfectivo = almacenId || almacenPredet
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -261,6 +279,10 @@ export default function NuevoProductoPage() {
         marcaId: marcaId || undefined,
         imagenUrl: imagenUrl.trim() || undefined,
         categoriaIds: categoriaId ? [categoriaId] : [],
+        almacenId:
+          !esServicio && stockInicial && parseFloat(stockInicial) > 0
+            ? almacenEfectivo || undefined
+            : undefined,
         componentes: esCombo && componentes.length ? componentes : undefined,
         variantes: [
           {
@@ -484,7 +506,7 @@ export default function NuevoProductoPage() {
                         className="h-11 text-base"
                       />
                     </Campo>
-                    <Campo label="Costo" hint="opcional">
+                    <Campo label="Costo" hint="se actualiza con las compras">
                       <MoneyInput id="costo" value={costo} onChange={setCosto} className="h-11" />
                     </Campo>
                     <Campo label="Unidad">
@@ -513,6 +535,27 @@ export default function NuevoProductoPage() {
                       <div className="hidden lg:block" />
                     )}
                   </div>
+
+                  {/* Almacén destino del stock inicial (hay varios) */}
+                  {!esServicio &&
+                  stockInicial &&
+                  parseFloat(stockInicial) > 0 &&
+                  almacenes.length > 1 ? (
+                    <div className="grid gap-4 sm:grid-cols-[280px_1fr]">
+                      <Campo label="Cargar stock en" hint="almacén">
+                        <Select
+                          value={almacenEfectivo}
+                          onChange={setAlmacenId}
+                          options={almacenes.map((a) => ({
+                            value: a.id,
+                            label: a.nombre,
+                            hint: a.esPredeterminado ? "predeterminado" : a.codigo,
+                          }))}
+                        />
+                      </Campo>
+                      <div className="hidden sm:block" />
+                    </div>
+                  ) : null}
 
                   <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
                     <Campo label="Código de barras" hint="opcional">

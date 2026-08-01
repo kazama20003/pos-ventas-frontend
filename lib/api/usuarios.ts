@@ -66,3 +66,25 @@ export const cambiarEstadoUsuario = (
     `/usuarios/${membresiaId}/estado`,
     { method: "PATCH", body: { estado } }
   )
+
+/** Permisos efectivos del usuario logueado (para gating de UI). */
+export type MisPermisos = { esAdmin: boolean; permisos: string[] }
+
+export const misPermisos = () =>
+  authedFetch<MisPermisos>("/usuarios/mis-permisos")
+
+/** Sucursales donde el usuario autenticado puede operar. */
+export type MisSucursales = {
+  global: boolean
+  sucursales: { id: string; codigo: string; nombre: string }[]
+}
+
+export const misSucursales = () =>
+  authedFetch<MisSucursales>("/usuarios/mis-sucursales")
+
+/** Reenvía el correo de invitación a un usuario aún pendiente (INVITADA). */
+export const reenviarInvitacion = (membresiaId: string) =>
+  authedFetch<{ enviado: boolean; correo: string; error: string | null }>(
+    `/usuarios/${membresiaId}/reenviar-invitacion`,
+    { method: "POST" }
+  )
