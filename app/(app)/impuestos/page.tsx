@@ -22,6 +22,8 @@ import {
   listarImpuestos,
   type Afectacion,
   type CrearImpuestoDto,
+  type TipoCalculoImpuesto,
+  type TipoTributo,
 } from "@/lib/api/catalogo"
 import { usePermisos } from "@/hooks/use-permisos"
 
@@ -40,6 +42,21 @@ const AFECTACIONES: { value: Afectacion; label: string }[] = [
 const afectacionLabel = (a: Afectacion) =>
   AFECTACIONES.find((x) => x.value === a)?.label ?? a
 
+const TIPOS_CALCULO: { value: TipoCalculoImpuesto; label: string }[] = [
+  { value: "PORCENTAJE", label: "Porcentaje (%)" },
+  { value: "MONTO_FIJO", label: "Monto fijo por unidad" },
+]
+
+const TIPOS_TRIBUTO: { value: TipoTributo; label: string }[] = [
+  { value: "IGV", label: "IGV" },
+  { value: "ISC", label: "ISC" },
+  { value: "ICBPER", label: "ICBPER (bolsa)" },
+  { value: "EXONERADO", label: "Exonerado" },
+  { value: "INAFECTO", label: "Inafecto" },
+  { value: "EXPORTACION", label: "Exportación" },
+  { value: "OTRO", label: "Otro" },
+]
+
 export default function ImpuestosPage() {
   const qc = useQueryClient()
   const { can } = usePermisos()
@@ -51,12 +68,16 @@ export default function ImpuestosPage() {
   })
   const data = impuestos.data ?? []
   const hayIgv = data.some((t) => t.codigo === "IGV")
+  const hayIcbper = data.some((t) => t.codigo === "ICBPER")
 
   const [nombre, setNombre] = React.useState("")
   const [codigo, setCodigo] = React.useState("")
   const [afectacion, setAfectacion] = React.useState<Afectacion>("GRAVADO")
   const [tasa, setTasa] = React.useState("")
   const [incluido, setIncluido] = React.useState(true)
+  const [tipoCalculo, setTipoCalculo] =
+    React.useState<TipoCalculoImpuesto>("PORCENTAJE")
+  const [tipoTributo, setTipoTributo] = React.useState<TipoTributo>("IGV")
 
   const mCrear = useMutation({
     mutationFn: (dto: CrearImpuestoDto) => crearImpuesto(dto),
@@ -67,6 +88,8 @@ export default function ImpuestosPage() {
       setTasa("")
       setAfectacion("GRAVADO")
       setIncluido(true)
+      setTipoCalculo("PORCENTAJE")
+      setTipoTributo("IGV")
     },
   })
   const err = errMsg(mCrear.error)
@@ -79,8 +102,23 @@ export default function ImpuestosPage() {
       rate: 18,
       includedInPrice: true,
       sunatTributeCode: "1000",
+      tipoCalculo: "PORCENTAJE",
+      tipoTributo: "IGV",
     })
 
+  const crearIcbper = () =>
+    mCrear.mutate({
+      codigo: "ICBPER",
+      nombre: "ICBPER (bolsa plástica)",
+      affectation: "GRAVADO",
+      rate: 0.5,
+      includedInPrice: false,
+      sunatTributeCode: "7152",
+      tipoCalculo: "MONTO_FIJO",
+      tipoTributo: "ICBPER",
+    })
+
+  const esMontoFijo = tipoCalculo === "MONTO_FIJO"
   const puedeAgregar =
     nombre.trim().length >= 2 && codigo.trim().length >= 1 && tasa !== ""
 
@@ -90,7 +128,9 @@ export default function ImpuestosPage() {
       nombre: nombre.trim(),
       affectation: afectacion,
       rate: parseFloat(tasa) || 0,
-      includedInPrice: incluido,
+      includedInPrice: esMontoFijo ? false : incluido,
+      tipoCalculo,
+      tipoTributo,
     })
 
   return (
@@ -104,24 +144,39 @@ export default function ImpuestosPage() {
         <div className="mx-auto flex max-w-2xl flex-col gap-5 p-5 md:p-6">
           {puedeCrear ? (
             <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
-              {/* Atajo IGV: el caso 99% en Perú. */}
-              {!hayIgv ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary/5 p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">¿Vendes con IGV?</p>
-                    <p className="text-xs text-muted-foreground">
-                      Crea el IGV 18% (incluido en el precio) con un clic.
-                    </p>
+              {/* Atajos: los tributos más comunes en Perú, de un clic. */}
+              {!hayIgv || !hayIcbper ? (
+                <div className="flex flex-col gap-2 rounded-lg bg-primary/5 p-3">
+                  <p className="text-sm font-medium">Atajos frecuentes</p>
+                  <div className="flex flex-wrap gap-2">
+                    {!hayIgv ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={mCrear.isPending}
+                        onClick={crearIgv}
+                      >
+                        <RiAddLine />
+                        IGV 18%
+                      </Button>
+                    ) : null}
+                    {!hayIcbper ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={mCrear.isPending}
+                        onClick={crearIcbper}
+                      >
+                        <RiAddLine />
+                        ICBPER (S/ 0.50 por bolsa)
+                      </Button>
+                    ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={mCrear.isPending}
-                    onClick={crearIgv}
-                  >
-                    <RiAddLine />
-                    Agregar IGV 18%
-                  </Button>
+                  <p className="text-[11px] text-muted-foreground">
+                    IGV: incluido en el precio. ICBPER: monto fijo por bolsa
+                    plástica, se suma al total.
+                  </p>
                 </div>
               ) : null}
 
@@ -148,6 +203,24 @@ export default function ImpuestosPage() {
                   />
                 </div>
                 <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Tributo</Label>
+                  <Select
+                    value={tipoTributo}
+                    onChange={(v) => setTipoTributo(v as TipoTributo)}
+                    options={TIPOS_TRIBUTO}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">
+                    Tipo de cálculo
+                  </Label>
+                  <Select
+                    value={tipoCalculo}
+                    onChange={(v) => setTipoCalculo(v as TipoCalculoImpuesto)}
+                    options={TIPOS_CALCULO}
+                  />
+                </div>
+                <div className="grid gap-1.5">
                   <Label className="text-xs text-muted-foreground">
                     Afectación
                   </Label>
@@ -158,31 +231,37 @@ export default function ImpuestosPage() {
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label className="text-xs text-muted-foreground">Tasa (%)</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    {esMontoFijo ? "Monto (S/ por unidad)" : "Tasa (%)"}
+                  </Label>
                   <Input
                     inputMode="decimal"
                     value={tasa}
                     onChange={(e) =>
                       setTasa(e.target.value.replace(/[^\d.]/g, ""))
                     }
-                    placeholder="18"
+                    placeholder={esMontoFijo ? "0.50" : "18"}
                     className="h-10 tabular-nums"
                   />
                 </div>
               </div>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={incluido}
-                  onChange={(e) => setIncluido(e.target.checked)}
-                  className="size-4 accent-[var(--primary)]"
-                />
-                El precio de venta ya incluye este impuesto
-              </label>
+              {!esMontoFijo ? (
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={incluido}
+                    onChange={(e) => setIncluido(e.target.checked)}
+                    className="size-4 accent-[var(--primary)]"
+                  />
+                  El precio de venta ya incluye este impuesto
+                </label>
+              ) : null}
               <p className="text-[11px] text-muted-foreground">
-                {incluido
-                  ? "El IGV se extrae del precio (precio con IGV). Es lo normal en retail peruano."
-                  : "El impuesto se suma al precio al vender (precio sin IGV)."}
+                {esMontoFijo
+                  ? "Monto fijo por unidad (ej. ICBPER S/ 0.50 por bolsa). Se suma al total al vender."
+                  : incluido
+                    ? "El impuesto se extrae del precio (precio con IGV). Normal en retail peruano."
+                    : "El impuesto se suma al precio al vender (precio sin IGV)."}
               </p>
               <div className="flex justify-end">
                 <Button
@@ -242,11 +321,17 @@ export default function ImpuestosPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right text-sm tabular-nums font-medium">
-                        {Number(t.rate)}%
+                        {t.tipoCalculo === "MONTO_FIJO"
+                          ? `S/ ${Number(t.rate).toFixed(2)}`
+                          : `${Number(t.rate)}%`}
                       </TableCell>
                       <TableCell className="pr-5 text-right">
                         <Badge variant="secondary">
-                          {t.includedInPrice ? "Incluido" : "Se suma"}
+                          {t.tipoCalculo === "MONTO_FIJO"
+                            ? "Por unidad"
+                            : t.includedInPrice
+                              ? "Incluido"
+                              : "Se suma"}
                         </Badge>
                       </TableCell>
                     </TableRow>

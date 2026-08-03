@@ -18,6 +18,18 @@ export type UnidadMedida = {
   decimals: number
 }
 
+export type TipoCalculoImpuesto = "PORCENTAJE" | "MONTO_FIJO"
+
+export type TipoTributo =
+  | "IGV"
+  | "ISC"
+  | "ICBPER"
+  | "EXONERADO"
+  | "INAFECTO"
+  | "EXPORTACION"
+  | "GRATUITO"
+  | "OTRO"
+
 export type Impuesto = {
   id: string
   codigo: string
@@ -26,6 +38,8 @@ export type Impuesto = {
   affectation: Afectacion
   rate: string | number
   includedInPrice: boolean
+  tipoCalculo?: TipoCalculoImpuesto
+  tipoTributo?: TipoTributo
 }
 
 export type Categoria = {
@@ -77,6 +91,7 @@ export type SaldoInventario = {
 export type VarianteProducto = {
   id: string
   sku: string
+  sunatProductCode?: string | null
   nombre: string
   cost: string | number
   unidadMedidaId: string
@@ -116,6 +131,8 @@ export type CrearVarianteDto = {
   unidadMedidaId: string
   /** Opcional: si se omite, el backend lo deriva del código del producto. */
   sku?: string
+  /** Código de producto SUNAT (Catálogo 25 / UNSPSC). Opcional. */
+  sunatProductCode?: string
   nombre: string
   cost?: number
   /** Precio de venta al público. */
@@ -134,6 +151,7 @@ export type CrearVarianteDto = {
 export type ActualizarVarianteDto = {
   nombre?: string
   sku?: string
+  sunatProductCode?: string
   unidadMedidaId?: string
   cost?: number
   precio?: number
@@ -322,6 +340,8 @@ export type CrearImpuestoDto = {
   rate: number
   includedInPrice?: boolean
   sunatTributeCode?: string
+  tipoCalculo?: TipoCalculoImpuesto
+  tipoTributo?: TipoTributo
 }
 
 export const crearImpuesto = (dto: CrearImpuestoDto) =>

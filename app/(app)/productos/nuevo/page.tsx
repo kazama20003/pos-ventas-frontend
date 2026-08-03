@@ -211,6 +211,7 @@ export default function NuevoProductoPage() {
   const [barcodeTipo, setBarcodeTipo] = React.useState<TipoCodigoBarras>("INTERNO")
   const [categoriaId, setCategoriaId] = React.useState("")
   const [impuestoId, setImpuestoId] = React.useState("")
+  const [sunatProductCode, setSunatProductCode] = React.useState("")
   const [marcaId, setMarcaId] = React.useState("")
   const [combo, setCombo] = React.useState<Record<string, number>>({})
 
@@ -259,6 +260,7 @@ export default function NuevoProductoPage() {
           {
             unidadMedidaId: unidadId,
             sku: codManual || undefined,
+            sunatProductCode: sunatProductCode.trim() || undefined,
             nombre: nombre.trim(),
             precio: precio ? parseFloat(precio) : undefined,
             barcode: barcode.trim() || undefined,
@@ -658,6 +660,17 @@ export default function NuevoProductoPage() {
                           label: `${t.nombre} (${t.codigo})`,
                         })),
                       ]}
+                    />
+                  </Campo>
+                  <Campo
+                    label="Código SUNAT del producto"
+                    hint="Opcional (UNSPSC, Catálogo 25). Solo si emites factura y SUNAT te lo exige."
+                  >
+                    <Input
+                      value={sunatProductCode}
+                      onChange={(e) => setSunatProductCode(e.target.value)}
+                      placeholder="Ej: 50202301"
+                      className="h-11 font-mono"
                     />
                   </Campo>
                 </div>
