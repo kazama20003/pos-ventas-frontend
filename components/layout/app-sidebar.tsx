@@ -61,6 +61,7 @@ const MODULOS: Modulo[] = [
       { label: "Catálogo", route: "/productos" },
       { label: "Categorías", route: "/categorias" },
       { label: "Marcas", route: "/marcas" },
+      { label: "Impuestos", route: "/impuestos" },
     ],
     perm: ["catalogo.listar", "catalogo.crear", "catalogo.editar"],
   },

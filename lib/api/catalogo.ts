@@ -315,6 +315,18 @@ export const crearUnidad = (dto: CrearUnidadDto) =>
 export const listarImpuestos = () =>
   authedFetch<Impuesto[]>("/catalogo/impuestos")
 
+export type CrearImpuestoDto = {
+  codigo: string
+  nombre: string
+  affectation: Afectacion
+  rate: number
+  includedInPrice?: boolean
+  sunatTributeCode?: string
+}
+
+export const crearImpuesto = (dto: CrearImpuestoDto) =>
+  authedFetch<Impuesto>("/catalogo/impuestos", { method: "POST", body: dto })
+
 export type CrearCategoriaDto = {
   codigo: string
   nombre: string

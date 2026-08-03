@@ -639,7 +639,14 @@ export default function NuevoProductoPage() {
                     )}
                   </Campo>
 
-                  <Campo label="Impuesto">
+                  <Campo
+                    label="Impuesto"
+                    hint={
+                      (impuestos.data ?? []).length
+                        ? "Normalmente IGV. Sin impuesto = venta sin IGV."
+                        : "No hay impuestos. Créalos en Productos → Impuestos."
+                    }
+                  >
                     <Select
                       value={impuestoId}
                       onChange={setImpuestoId}
