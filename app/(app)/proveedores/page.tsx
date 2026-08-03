@@ -44,6 +44,12 @@ import {
   type TipoDocumento,
 } from "@/lib/api/proveedores"
 import { usePermisos } from "@/hooks/use-permisos"
+import {
+  maxLargoDocumento,
+  validarDocumento,
+  validarEmail,
+  validarTelefono,
+} from "@/lib/validaciones"
 
 function errMsg(e: unknown) {
   return (e as ApiError | Error | null)?.message ?? null
@@ -59,47 +65,6 @@ function slug(s: string) {
     .slice(0, 20)
 }
 
-// --- Validación de documento de identidad (SUNAT / RENIEC) ---
-// RUC: 11 dígitos, empieza en 10 (persona natural), 15, 17 o 20 (jurídica).
-// DNI: 8 dígitos. CE/Pasaporte/Otro: alfanumérico libre.
-const PREFIJOS_RUC = ["10", "15", "16", "17", "20"]
-
-function maxLargoDocumento(tipo: TipoDocumento): number {
-  if (tipo === "RUC") return 11
-  if (tipo === "DNI") return 8
-  return 20
-}
-
-/** Devuelve un mensaje de error si el documento no es válido, o null si lo es. */
-function validarDocumento(tipo: TipoDocumento, num: string): string | null {
-  const v = num.trim()
-  if (!v) return null // el documento es opcional
-  if (tipo === "RUC") {
-    if (!/^\d{11}$/.test(v)) return "El RUC debe tener 11 dígitos."
-    if (!PREFIJOS_RUC.includes(v.slice(0, 2)))
-      return "El RUC debe empezar en 10, 15, 16, 17 o 20."
-    return null
-  }
-  if (tipo === "DNI") {
-    if (!/^\d{8}$/.test(v)) return "El DNI debe tener 8 dígitos."
-    return null
-  }
-  return null
-}
-
-/** Email válido (opcional). null si vacío o correcto. */
-function validarEmail(v: string): string | null {
-  const t = v.trim()
-  if (!t) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? null : "Correo no válido."
-}
-
-/** Teléfono peruano (opcional): 6 a 12 dígitos. */
-function validarTelefono(v: string): string | null {
-  const t = v.trim()
-  if (!t) return null
-  return /^\d{6,12}$/.test(t) ? null : "Teléfono: 6 a 12 dígitos."
-}
 
 export default function ProveedoresPage() {
   const { can } = usePermisos()
