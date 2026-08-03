@@ -59,6 +59,34 @@ function slug(s: string) {
     .slice(0, 20)
 }
 
+// --- Validación de documento de identidad (SUNAT / RENIEC) ---
+// RUC: 11 dígitos, empieza en 10 (persona natural), 15, 17 o 20 (jurídica).
+// DNI: 8 dígitos. CE/Pasaporte/Otro: alfanumérico libre.
+const PREFIJOS_RUC = ["10", "15", "16", "17", "20"]
+
+function maxLargoDocumento(tipo: TipoDocumento): number {
+  if (tipo === "RUC") return 11
+  if (tipo === "DNI") return 8
+  return 20
+}
+
+/** Devuelve un mensaje de error si el documento no es válido, o null si lo es. */
+function validarDocumento(tipo: TipoDocumento, num: string): string | null {
+  const v = num.trim()
+  if (!v) return null // el documento es opcional
+  if (tipo === "RUC") {
+    if (!/^\d{11}$/.test(v)) return "El RUC debe tener 11 dígitos."
+    if (!PREFIJOS_RUC.includes(v.slice(0, 2)))
+      return "El RUC debe empezar en 10, 15, 16, 17 o 20."
+    return null
+  }
+  if (tipo === "DNI") {
+    if (!/^\d{8}$/.test(v)) return "El DNI debe tener 8 dígitos."
+    return null
+  }
+  return null
+}
+
 export default function ProveedoresPage() {
   const { can } = usePermisos()
   const puedeCrear = can("proveedores.crear")
@@ -274,7 +302,9 @@ function CrearProveedorSheet({
     },
   })
   const err = errMsg(m.error)
-  const valido = razonSocial.trim().length >= 2 && codigo.length >= 2
+  const errorDoc = validarDocumento(tipoDoc, numDoc)
+  const valido =
+    razonSocial.trim().length >= 2 && codigo.length >= 2 && !errorDoc
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -310,10 +340,22 @@ function CrearProveedorSheet({
             <Campo label="N° documento">
               <Input
                 value={numDoc}
-                onChange={(e) => setNumDoc(e.target.value.replace(/[^0-9A-Za-z]/g, ""))}
-                placeholder="20481234567"
+                inputMode={tipoDoc === "RUC" || tipoDoc === "DNI" ? "numeric" : "text"}
+                maxLength={maxLargoDocumento(tipoDoc)}
+                onChange={(e) => {
+                  const soloDigitos = tipoDoc === "RUC" || tipoDoc === "DNI"
+                  const limpio = e.target.value
+                    .replace(soloDigitos ? /[^0-9]/g : /[^0-9A-Za-z]/g, "")
+                    .slice(0, maxLargoDocumento(tipoDoc))
+                  setNumDoc(limpio)
+                }}
+                placeholder={tipoDoc === "RUC" ? "20481234567" : tipoDoc === "DNI" ? "12345678" : "N° documento"}
                 className="h-10"
+                aria-invalid={Boolean(errorDoc)}
               />
+              {errorDoc ? (
+                <p className="text-xs text-destructive">{errorDoc}</p>
+              ) : null}
             </Campo>
           </div>
 
