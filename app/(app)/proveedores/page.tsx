@@ -87,6 +87,20 @@ function validarDocumento(tipo: TipoDocumento, num: string): string | null {
   return null
 }
 
+/** Email válido (opcional). null si vacío o correcto. */
+function validarEmail(v: string): string | null {
+  const t = v.trim()
+  if (!t) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? null : "Correo no válido."
+}
+
+/** Teléfono peruano (opcional): 6 a 12 dígitos. */
+function validarTelefono(v: string): string | null {
+  const t = v.trim()
+  if (!t) return null
+  return /^\d{6,12}$/.test(t) ? null : "Teléfono: 6 a 12 dígitos."
+}
+
 export default function ProveedoresPage() {
   const { can } = usePermisos()
   const puedeCrear = can("proveedores.crear")
@@ -303,8 +317,14 @@ function CrearProveedorSheet({
   })
   const err = errMsg(m.error)
   const errorDoc = validarDocumento(tipoDoc, numDoc)
+  const errorEmail = validarEmail(email)
+  const errorPhone = validarTelefono(phone)
   const valido =
-    razonSocial.trim().length >= 2 && codigo.length >= 2 && !errorDoc
+    razonSocial.trim().length >= 2 &&
+    codigo.length >= 2 &&
+    !errorDoc &&
+    !errorEmail &&
+    !errorPhone
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -315,7 +335,11 @@ function CrearProveedorSheet({
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-4 overflow-auto p-6">
-          <Campo label="Razón social / Nombre">
+          <Grupo titulo="Identificación" />
+          <Campo
+            label="Razón social / Nombre"
+            hint={codigo ? undefined : "Como figura en SUNAT."}
+          >
             <Input
               value={razonSocial}
               onChange={(e) => setRazonSocial(e.target.value)}
@@ -337,7 +361,18 @@ function CrearProveedorSheet({
                 options={TIPOS_DOCUMENTO}
               />
             </Campo>
-            <Campo label="N° documento">
+            <Campo
+              label="N° documento"
+              hint={
+                errorDoc
+                  ? undefined
+                  : tipoDoc === "RUC"
+                    ? "11 dígitos. Empieza en 20 (empresa) o 10 (persona)."
+                    : tipoDoc === "DNI"
+                      ? "8 dígitos."
+                      : "Opcional."
+              }
+            >
               <Input
                 value={numDoc}
                 inputMode={tipoDoc === "RUC" || tipoDoc === "DNI" ? "numeric" : "text"}
@@ -359,6 +394,7 @@ function CrearProveedorSheet({
             </Campo>
           </div>
 
+          <Grupo titulo="Contacto" />
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo label="Contacto">
               <Input
@@ -371,10 +407,15 @@ function CrearProveedorSheet({
             <Campo label="Teléfono">
               <Input
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                inputMode="numeric"
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
                 placeholder="Opcional"
-                className="h-10"
+                className="h-10 tabular-nums"
+                aria-invalid={Boolean(errorPhone)}
               />
+              {errorPhone ? (
+                <p className="text-xs text-destructive">{errorPhone}</p>
+              ) : null}
             </Campo>
           </div>
 
@@ -385,7 +426,11 @@ function CrearProveedorSheet({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Opcional"
               className="h-10"
+              aria-invalid={Boolean(errorEmail)}
             />
+            {errorEmail ? (
+              <p className="text-xs text-destructive">{errorEmail}</p>
+            ) : null}
           </Campo>
           <Campo label="Dirección">
             <Input
@@ -395,12 +440,19 @@ function CrearProveedorSheet({
               className="h-10"
             />
           </Campo>
-          <Campo label="Días de crédito">
+
+          <Grupo titulo="Condiciones comerciales" />
+          <Campo
+            label="Días de crédito"
+            hint="Plazo que el proveedor te da para pagarle. 0 = pagas al contado."
+          >
             <Input
               inputMode="numeric"
               value={dias}
-              onChange={(e) => setDias(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="0 = al contado"
+              onChange={(e) =>
+                setDias(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))
+              }
+              placeholder="0"
               className="h-10 max-w-[160px] tabular-nums"
             />
           </Campo>
@@ -458,6 +510,10 @@ function EditarProveedor({ proveedor }: { proveedor: Proveedor }) {
     onSuccess: invalidar,
   })
   const err = errMsg(mGuardar.error || mEstado.error)
+  const errorEmail = validarEmail(email)
+  const errorPhone = validarTelefono(phone)
+  const puedeGuardar =
+    razonSocial.trim().length >= 2 && !errorEmail && !errorPhone
   const activo = proveedor.estado === "ACTIVO"
 
   return (
@@ -492,17 +548,40 @@ function EditarProveedor({ proveedor }: { proveedor: Proveedor }) {
                 <Input value={contacto} onChange={(e) => setContacto(e.target.value)} className="h-10" />
               </Campo>
               <Campo label="Teléfono">
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="h-10" />
+                <Input
+                  value={phone}
+                  inputMode="numeric"
+                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
+                  className="h-10 tabular-nums"
+                  aria-invalid={Boolean(errorPhone)}
+                />
+                {errorPhone ? (
+                  <p className="text-xs text-destructive">{errorPhone}</p>
+                ) : null}
               </Campo>
             </div>
             <Campo label="Correo">
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-10"
+                aria-invalid={Boolean(errorEmail)}
+              />
+              {errorEmail ? (
+                <p className="text-xs text-destructive">{errorEmail}</p>
+              ) : null}
             </Campo>
-            <Campo label="Días de crédito">
+            <Campo
+              label="Días de crédito"
+              hint="Plazo que el proveedor te da para pagarle. 0 = al contado."
+            >
               <Input
                 inputMode="numeric"
                 value={dias}
-                onChange={(e) => setDias(e.target.value.replace(/[^0-9]/g, ""))}
+                onChange={(e) =>
+                  setDias(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))
+                }
                 className="h-10 max-w-[160px] tabular-nums"
               />
             </Campo>
@@ -546,7 +625,11 @@ function EditarProveedor({ proveedor }: { proveedor: Proveedor }) {
               >
                 Cancelar
               </Button>
-              <Button type="button" disabled={mGuardar.isPending} onClick={() => mGuardar.mutate()}>
+              <Button
+                type="button"
+                disabled={!puedeGuardar || mGuardar.isPending}
+                onClick={() => mGuardar.mutate()}
+              >
                 <RiCheckLine />
                 {mGuardar.isPending ? "Guardando…" : "Guardar"}
               </Button>
@@ -582,12 +665,30 @@ function EditarProveedor({ proveedor }: { proveedor: Proveedor }) {
 /* Primitivos                                                         */
 /* ------------------------------------------------------------------ */
 
-function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+function Campo({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="grid gap-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
+      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
     </div>
+  )
+}
+
+/** Encabezado de sección dentro de un formulario. */
+function Grupo({ titulo }: { titulo: string }) {
+  return (
+    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+      {titulo}
+    </p>
   )
 }
 
