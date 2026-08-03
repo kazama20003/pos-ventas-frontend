@@ -59,6 +59,7 @@ const MODULOS: Modulo[] = [
     icon2: "M3 8l9 5 9-5M12 13v8",
     subs: [
       { label: "Catálogo", route: "/productos" },
+      { label: "Categorías", route: "/categorias" },
       { label: "Marcas", route: "/marcas" },
     ],
     perm: ["catalogo.listar", "catalogo.crear", "catalogo.editar"],
