@@ -256,6 +256,9 @@ function TarjetaEmpresa({ empresa }: { empresa: Empresa }) {
   const [comercial, setComercial] = React.useState(empresa.nombreComercial ?? "")
   const [ubigeo, setUbigeo] = React.useState(empresa.sunatUbigeo ?? "")
   const [direccion, setDireccion] = React.useState(empresa.fiscalAddress ?? "")
+  const [codSunat, setCodSunat] = React.useState(
+    empresa.sunatProductCodeDefault ?? ""
+  )
 
   const m = useMutation({
     mutationFn: () =>
@@ -264,6 +267,7 @@ function TarjetaEmpresa({ empresa }: { empresa: Empresa }) {
         nombreComercial: comercial.trim(),
         sunatUbigeo: ubigeo.trim(),
         fiscalAddress: direccion.trim(),
+        sunatProductCodeDefault: codSunat.trim(),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["empresas"] })
@@ -347,6 +351,21 @@ function TarjetaEmpresa({ empresa }: { empresa: Empresa }) {
               className="h-9"
             />
           </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Código SUNAT por defecto
+            </Label>
+            <Input
+              value={codSunat}
+              onChange={(e) => setCodSunat(e.target.value)}
+              placeholder="UNSPSC genérico, ej: 10000000"
+              className="h-9 font-mono"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Se aplica a todos los productos que no tengan su propio código
+              (ni por categoría) al facturar.
+            </p>
+          </div>
           {err ? (
             <p className="flex items-center gap-1.5 text-xs text-destructive">
               <RiErrorWarningLine className="size-4" />
@@ -377,6 +396,7 @@ function TarjetaEmpresa({ empresa }: { empresa: Empresa }) {
                 setComercial(empresa.nombreComercial ?? "")
                 setUbigeo(empresa.sunatUbigeo ?? "")
                 setDireccion(empresa.fiscalAddress ?? "")
+                setCodSunat(empresa.sunatProductCodeDefault ?? "")
               }}
             >
               Cancelar

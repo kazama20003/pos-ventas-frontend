@@ -47,6 +47,7 @@ export type Categoria = {
   codigo: string
   nombre: string
   descripcion?: string | null
+  sunatProductCode?: string | null
   padreId?: string | null
   sortOrder?: number
 }
@@ -351,6 +352,7 @@ export type CrearCategoriaDto = {
   codigo: string
   nombre: string
   descripcion?: string
+  sunatProductCode?: string
   padreId?: string
   sortOrder?: number
 }
@@ -365,6 +367,7 @@ export type ActualizarCategoriaDto = {
   codigo?: string
   nombre?: string
   descripcion?: string
+  sunatProductCode?: string
   padreId?: string
   sortOrder?: number
 }

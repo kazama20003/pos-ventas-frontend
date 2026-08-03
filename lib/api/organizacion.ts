@@ -16,6 +16,7 @@ export type Empresa = {
   estado?: EstadoRegistro
   sunatUbigeo?: string | null
   fiscalAddress?: string | null
+  sunatProductCodeDefault?: string | null
 }
 
 export type Sucursal = {
@@ -81,6 +82,7 @@ export type ActualizarEmpresaDto = {
   nombreComercial?: string
   sunatUbigeo?: string
   fiscalAddress?: string
+  sunatProductCodeDefault?: string
 }
 
 export const actualizarEmpresa = (id: string, dto: ActualizarEmpresaDto) =>

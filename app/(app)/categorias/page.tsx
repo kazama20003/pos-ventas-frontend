@@ -84,6 +84,7 @@ export default function CategoriasPage() {
   const [nombre, setNombre] = React.useState("")
   const [descripcion, setDescripcion] = React.useState("")
   const [padreId, setPadreId] = React.useState("")
+  const [sunatCode, setSunatCode] = React.useState("")
 
   const mCrear = useMutation({
     mutationFn: () =>
@@ -91,6 +92,7 @@ export default function CategoriasPage() {
         codigo: slug(nombre),
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || undefined,
+        sunatProductCode: sunatCode.trim() || undefined,
         padreId: padreId || undefined,
       }),
     onSuccess: () => {
@@ -98,6 +100,7 @@ export default function CategoriasPage() {
       setNombre("")
       setDescripcion("")
       setPadreId("")
+      setSunatCode("")
     },
   })
   const err = errMsg(mCrear.error)
@@ -150,16 +153,32 @@ export default function CategoriasPage() {
                   />
                 </div>
               </div>
-              <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Descripción (opcional)
-                </Label>
-                <Input
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  placeholder="Para qué sirve este grupo"
-                  className="h-10"
-                />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">
+                    Descripción (opcional)
+                  </Label>
+                  <Input
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    placeholder="Para qué sirve este grupo"
+                    className="h-10"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">
+                    Código SUNAT (opcional)
+                  </Label>
+                  <Input
+                    value={sunatCode}
+                    onChange={(e) => setSunatCode(e.target.value)}
+                    placeholder="UNSPSC, ej: 50202301"
+                    className="h-10 font-mono"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Los productos de este grupo lo heredan para la factura.
+                  </p>
+                </div>
               </div>
               <div className="flex justify-end">
                 <Button
@@ -239,6 +258,9 @@ function FilaCategoria({
     categoria.descripcion ?? ""
   )
   const [padreId, setPadreId] = React.useState(categoria.padreId ?? "")
+  const [sunatCode, setSunatCode] = React.useState(
+    categoria.sunatProductCode ?? ""
+  )
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["categorias"] })
   const mGuardar = useMutation({
@@ -246,6 +268,7 @@ function FilaCategoria({
       actualizarCategoria(categoria.id, {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
+        sunatProductCode: sunatCode.trim(),
         padreId: padreId || undefined,
       }),
     onSuccess: () => {
@@ -279,6 +302,12 @@ function FilaCategoria({
               className="h-9"
               placeholder="Descripción (opcional)"
             />
+            <Input
+              value={sunatCode}
+              onChange={(e) => setSunatCode(e.target.value)}
+              className="h-9 font-mono"
+              placeholder="Código SUNAT (opcional, UNSPSC)"
+            />
             <Select
               value={padreId}
               onChange={setPadreId}
@@ -298,6 +327,7 @@ function FilaCategoria({
                   setNombre(categoria.nombre)
                   setDescripcion(categoria.descripcion ?? "")
                   setPadreId(categoria.padreId ?? "")
+                  setSunatCode(categoria.sunatProductCode ?? "")
                 }}
               >
                 <RiCloseLine />
