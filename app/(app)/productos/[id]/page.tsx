@@ -14,6 +14,7 @@ import {
 } from "@remixicon/react"
 
 import { ImageUpload } from "@/components/productos/image-upload"
+import { ProveedoresManager } from "@/components/productos/proveedores-manager"
 import { VariantesManager } from "@/components/productos/variantes-manager"
 import { PageHeader } from "@/components/layout/page-header"
 import { Button } from "@/components/ui/button"
@@ -310,6 +311,8 @@ function EditorProducto({ producto: p }: { producto: Producto }) {
           </Seccion>
 
           <VariantesManager producto={p} />
+
+          {tipo !== "SERVICIO" ? <ProveedoresManager producto={p} /> : null}
 
           {tipo !== "SERVICIO" && variante ? (
             <Seccion

@@ -79,6 +79,95 @@ export const desactivarProveedor = (id: string) =>
     { method: "POST" }
   )
 
+// ---- Catálogo de aprovisionamiento: qué proveedor surte qué variante ----
+
+/** Un proveedor que surte una variante (respuesta de proveedoresDeVariante). */
+export type ProveedorDeVariante = {
+  id: string
+  proveedorId: string
+  proveedorCodigo: string
+  proveedorRazonSocial: string
+  supplierSku: string | null
+  costo: string
+  moneda: string
+  leadTimeDays: number
+  minOrderQty: string
+  isPreferred: boolean
+}
+
+/** Una variante surtida por un proveedor (respuesta de listarProductosProveedor). */
+export type ProductoDeProveedor = {
+  id: string
+  varianteId: string
+  sku: string
+  nombreVariante: string
+  productoCodigo: string
+  productoNombre: string
+  supplierSku: string | null
+  costo: string
+  moneda: string
+  leadTimeDays: number
+  minOrderQty: string
+  isPreferred: boolean
+}
+
+export type VincularProductoProveedorDto = {
+  varianteId: string
+  supplierSku?: string
+  costo: number
+  moneda?: string
+  leadTimeDays?: number
+  minOrderQty?: number
+  isPreferred?: boolean
+}
+
+export type ActualizarProductoProveedorDto = {
+  supplierSku?: string
+  costo?: number
+  moneda?: string
+  leadTimeDays?: number
+  minOrderQty?: number
+  isPreferred?: boolean
+}
+
+/** Proveedores que surten una variante (ordenados: preferido y menor costo primero). */
+export const proveedoresDeVariante = (varianteId: string) =>
+  authedFetch<ProveedorDeVariante[]>(
+    `/proveedores/producto/${varianteId}`
+  )
+
+/** Variantes que surte un proveedor. */
+export const listarProductosProveedor = (proveedorId: string) =>
+  authedFetch<ProductoDeProveedor[]>(`/proveedores/${proveedorId}/productos`)
+
+export const vincularProductoProveedor = (
+  proveedorId: string,
+  dto: VincularProductoProveedorDto
+) =>
+  authedFetch<{ id: string; varianteId: string; isPreferred: boolean }>(
+    `/proveedores/${proveedorId}/productos`,
+    { method: "POST", body: dto }
+  )
+
+export const actualizarProductoProveedor = (
+  proveedorId: string,
+  varianteId: string,
+  dto: ActualizarProductoProveedorDto
+) =>
+  authedFetch<{ id: string; varianteId: string; isPreferred: boolean }>(
+    `/proveedores/${proveedorId}/productos/${varianteId}`,
+    { method: "PATCH", body: dto }
+  )
+
+export const desvincularProductoProveedor = (
+  proveedorId: string,
+  varianteId: string
+) =>
+  authedFetch<{ proveedorId: string; varianteId: string; desvinculado: boolean }>(
+    `/proveedores/${proveedorId}/productos/${varianteId}`,
+    { method: "DELETE" }
+  )
+
 export const TIPOS_DOCUMENTO: { value: TipoDocumento; label: string }[] = [
   { value: "RUC", label: "RUC" },
   { value: "DNI", label: "DNI" },
