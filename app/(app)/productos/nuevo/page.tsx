@@ -457,12 +457,12 @@ export default function NuevoProductoPage() {
 
               <Card
                 titulo="Precio y venta"
-                ayuda="Precio al público y cómo se vende."
+                ayuda="El precio se guarda en la lista de precios general. Podrás crear más listas (mayorista, por temporada) desde Precios."
                 icon={RiMoneyDollarCircleLine}
               >
                 <div className="grid gap-4">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Campo label="Precio de venta">
+                    <Campo label="Precio de venta" hint="lista general">
                       <MoneyInput
                         id="precio"
                         value={precio}

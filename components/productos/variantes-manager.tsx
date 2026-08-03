@@ -65,7 +65,9 @@ export function VariantesManager({ producto }: { producto: Producto }) {
               Variantes ({producto.variants.length})
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Presentaciones del producto (talla, color, tamaño…).
+              Presentaciones del producto (talla, color, tamaño…). El precio se
+              guarda en la lista general; el costo de compra se define por
+              proveedor.
             </p>
           </div>
         </div>
@@ -159,7 +161,9 @@ function VarianteCard({
           <Input value={nombre} onChange={(e) => setNombre(e.target.value)} className="h-9" />
         </div>
         <div className="grid gap-1.5">
-          <Label className="text-xs text-muted-foreground">Precio</Label>
+          <Label className="text-xs text-muted-foreground">
+            Precio <span className="font-normal">· lista general</span>
+          </Label>
           <Input
             inputMode="decimal"
             value={precio}
@@ -396,7 +400,9 @@ function NuevaVariante({
           />
         </div>
         <div className="grid gap-1.5">
-          <Label className="text-xs text-muted-foreground">Precio</Label>
+          <Label className="text-xs text-muted-foreground">
+            Precio <span className="font-normal">· lista general</span>
+          </Label>
           <Input
             inputMode="decimal"
             value={precio}
