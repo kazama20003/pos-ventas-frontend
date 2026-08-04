@@ -50,6 +50,7 @@ export type Caja = {
   sucursalId: string
   codigo: string
   nombre: string
+  almacenId?: string | null
   estado: EstadoRegistro
 }
 
@@ -182,12 +183,13 @@ export type CrearCajaDto = {
   sucursalId: string
   codigo: string
   nombre: string
+  almacenId?: string
 }
 
 export const crearCaja = (dto: CrearCajaDto) =>
   authedFetch<Caja>("/sucursales/cajas", { method: "POST", body: dto })
 
-export type ActualizarCajaDto = { nombre?: string }
+export type ActualizarCajaDto = { nombre?: string; almacenId?: string | null }
 
 export const actualizarCaja = (id: string, dto: ActualizarCajaDto) =>
   authedFetch<Caja>(`/sucursales/cajas/${id}`, { method: "PATCH", body: dto })

@@ -713,16 +713,16 @@ function DetalleSucursal({ sucursal }: { sucursal: Sucursal }) {
               }))}
               queryKey={["almacenes", sucursal.id]}
               conTipo
-              onCrear={(nombre, tipo) =>
+              onCrear={(nombre, opts) =>
                 crearAlmacen({
                   sucursalId: sucursal.id,
                   codigo: slug(nombre),
                   nombre,
-                  tipo,
+                  tipo: opts?.tipo,
                 })
               }
-              onRenombrar={(id, nombre, tipo) =>
-                actualizarAlmacen(id, { nombre, tipo })
+              onRenombrar={(id, nombre, opts) =>
+                actualizarAlmacen(id, { nombre, tipo: opts?.tipo })
               }
               onArchivar={archivarAlmacen}
               onReactivar={reactivarAlmacen}
@@ -739,19 +739,35 @@ function DetalleSucursal({ sucursal }: { sucursal: Sucursal }) {
               items={(cajas.data ?? []).map((c: Caja) => ({
                 id: c.id,
                 nombre: c.nombre,
-                sub: c.codigo,
+                sub: c.almacenId
+                  ? `${c.codigo} · ${
+                      (almacenes.data ?? []).find(
+                        (a: Almacen) => a.id === c.almacenId,
+                      )?.nombre ?? "almacén"
+                    }`
+                  : `${c.codigo} · sin almacén`,
                 codigo: c.codigo,
                 estado: c.estado,
+                almacenId: c.almacenId,
               }))}
               queryKey={["cajas", sucursal.id]}
-              onCrear={(nombre) =>
+              almacenes={(almacenes.data ?? [])
+                .filter((a: Almacen) => a.estado === "ACTIVO")
+                .map((a: Almacen) => ({ value: a.id, label: a.nombre }))}
+              onCrear={(nombre, opts) =>
                 crearCaja({
                   sucursalId: sucursal.id,
                   codigo: slug(nombre),
                   nombre,
+                  almacenId: opts?.almacenId,
                 })
               }
-              onRenombrar={(id, nombre) => actualizarCaja(id, { nombre })}
+              onRenombrar={(id, nombre, opts) =>
+                actualizarCaja(id, {
+                  nombre,
+                  almacenId: opts?.almacenId ?? null,
+                })
+              }
               onArchivar={archivarCaja}
               onReactivar={reactivarCaja}
               placeholderNuevo="Nombre de la caja"
@@ -775,7 +791,10 @@ type ItemSub = {
   estado: EstadoRegistro
   tipo?: TipoAlmacen
   predeterminado?: boolean
+  almacenId?: string | null
 }
+
+type OpcionesCrear = { tipo?: TipoAlmacen; almacenId?: string }
 
 function SubTabla({
   titulo,
@@ -789,31 +808,43 @@ function SubTabla({
   onPredeterminar,
   placeholderNuevo,
   conTipo,
+  almacenes,
 }: {
   titulo: string
   cargando: boolean
   items: ItemSub[]
   queryKey: (string | undefined)[]
-  onCrear: (nombre: string, tipo?: TipoAlmacen) => Promise<unknown>
-  onRenombrar: (id: string, nombre: string, tipo?: TipoAlmacen) => Promise<unknown>
+  onCrear: (nombre: string, opts?: OpcionesCrear) => Promise<unknown>
+  onRenombrar: (
+    id: string,
+    nombre: string,
+    opts?: OpcionesCrear,
+  ) => Promise<unknown>
   onArchivar: (id: string) => Promise<unknown>
   onReactivar: (id: string) => Promise<unknown>
   onPredeterminar?: (id: string) => Promise<unknown>
   placeholderNuevo: string
   conTipo?: boolean
+  /** Si se pasa, la fila ofrece elegir el almacén de origen (modo cajas). */
+  almacenes?: { value: string; label: string }[]
 }) {
   const qc = useQueryClient()
   const [nuevo, setNuevo] = React.useState("")
   const [tipoNuevo, setTipoNuevo] = React.useState<TipoAlmacen>("PRINCIPAL")
+  const [almacenNuevo, setAlmacenNuevo] = React.useState("")
   const invalidar = () => qc.invalidateQueries({ queryKey })
 
   const mCrear = useMutation({
     mutationFn: (nombre: string) =>
-      onCrear(nombre, conTipo ? tipoNuevo : undefined),
+      onCrear(nombre, {
+        ...(conTipo ? { tipo: tipoNuevo } : {}),
+        ...(almacenes ? { almacenId: almacenNuevo || undefined } : {}),
+      }),
     onSuccess: () => {
       invalidar()
       setNuevo("")
       setTipoNuevo("PRINCIPAL")
+      setAlmacenNuevo("")
     },
   })
   const err = errMsg(mCrear.error)
@@ -839,6 +870,15 @@ function SubTabla({
             onChange={(v) => setTipoNuevo(v as TipoAlmacen)}
             options={TIPOS_ALMACEN}
             className="w-40 shrink-0"
+          />
+        ) : null}
+        {almacenes ? (
+          <Select
+            value={almacenNuevo}
+            onChange={setAlmacenNuevo}
+            options={[{ value: "", label: "Sin almacén" }, ...almacenes]}
+            placeholder="Almacén"
+            className="w-44 shrink-0"
           />
         ) : null}
         <Button
@@ -878,6 +918,7 @@ function SubTabla({
                   onReactivar={onReactivar}
                   onPredeterminar={onPredeterminar}
                   conTipo={conTipo}
+                  almacenes={almacenes}
                 />
               ))}
             </TableBody>
@@ -896,24 +937,34 @@ function FilaSub({
   onReactivar,
   onPredeterminar,
   conTipo,
+  almacenes,
 }: {
   item: ItemSub
   queryKey: (string | undefined)[]
-  onRenombrar: (id: string, nombre: string, tipo?: TipoAlmacen) => Promise<unknown>
+  onRenombrar: (
+    id: string,
+    nombre: string,
+    opts?: OpcionesCrear,
+  ) => Promise<unknown>
   onArchivar: (id: string) => Promise<unknown>
   onReactivar: (id: string) => Promise<unknown>
   onPredeterminar?: (id: string) => Promise<unknown>
   conTipo?: boolean
+  almacenes?: { value: string; label: string }[]
 }) {
   const qc = useQueryClient()
   const [editando, setEditando] = React.useState(false)
   const [nombre, setNombre] = React.useState(item.nombre)
   const [tipo, setTipo] = React.useState<TipoAlmacen>(item.tipo ?? "PRINCIPAL")
+  const [almacenSel, setAlmacenSel] = React.useState(item.almacenId ?? "")
   const invalidar = () => qc.invalidateQueries({ queryKey })
 
   const mRenombrar = useMutation({
     mutationFn: () =>
-      onRenombrar(item.id, nombre.trim(), conTipo ? tipo : undefined),
+      onRenombrar(item.id, nombre.trim(), {
+        ...(conTipo ? { tipo } : {}),
+        ...(almacenes ? { almacenId: almacenSel || undefined } : {}),
+      }),
     onSuccess: () => {
       invalidar()
       setEditando(false)
@@ -950,6 +1001,15 @@ function FilaSub({
                 className="w-36 shrink-0"
               />
             ) : null}
+            {almacenes ? (
+              <Select
+                value={almacenSel}
+                onChange={setAlmacenSel}
+                options={[{ value: "", label: "Sin almacén" }, ...almacenes]}
+                placeholder="Almacén"
+                className="w-40 shrink-0"
+              />
+            ) : null}
             <Button
               type="button"
               size="icon-sm"
@@ -967,6 +1027,7 @@ function FilaSub({
                 setEditando(false)
                 setNombre(item.nombre)
                 setTipo(item.tipo ?? "PRINCIPAL")
+                setAlmacenSel(item.almacenId ?? "")
               }}
             >
               <RiCloseLine />
