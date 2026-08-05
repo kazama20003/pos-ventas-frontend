@@ -14,6 +14,7 @@ import {
   RiCloseLine,
   RiCoinsLine,
   RiEditLine,
+  RiInformationLine,
   RiSearchLine,
   RiStackLine,
   RiStore2Line,
@@ -115,10 +116,21 @@ export default function InventarioPage() {
     <>
       <PageHeader
         title="Stock consolidado"
-        description="Existencias y valorizado por almacén y sucursal."
+        description="Reporte en vivo de existencias y valorizado por almacén."
       />
 
       <div className="flex-1 overflow-auto p-4 md:p-6">
+        {/* Nota: aclara que es solo lectura y qué se puede editar. */}
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-sky-500/25 bg-sky-500/5 px-3.5 py-2.5 text-xs text-muted-foreground">
+          <RiInformationLine className="mt-0.5 size-4 shrink-0 text-sky-500" />
+          <p>
+            Esta vista es <b>solo lectura</b>: el stock se actualiza solo con las
+            ventas, compras, ajustes y transferencias. Lo único editable es el{" "}
+            <b>stock mínimo</b> de cada fila (columna “Stock mínimo”), que se{" "}
+            <b>guarda al instante</b> y sirve para las alertas de reabastecimiento.
+          </p>
+        </div>
+
         {/* Filtros */}
         <div className="mb-4 grid gap-3 rounded-2xl border bg-card p-4 shadow-sm ring-1 ring-foreground/5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1.5">
@@ -296,17 +308,29 @@ export default function InventarioPage() {
           {/* Tabla detalle */}
           <section className="overflow-hidden rounded-2xl border bg-card shadow-sm ring-1 ring-foreground/5">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="sticky top-0 z-10">
+                  <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Producto</th>
                     <th className="px-4 py-3 font-medium">Almacén</th>
-                    <th className="px-4 py-3 text-right font-medium">Stock</th>
-                    <th className="px-4 py-3 text-right font-medium">Disp.</th>
-                    <th className="px-4 py-3 text-right font-medium">Tránsito</th>
-                    <th className="px-4 py-3 text-right font-medium">Costo</th>
-                    <th className="px-4 py-3 text-right font-medium">Valor</th>
-                    <th className="px-4 py-3 text-right font-medium">Mín.</th>
+                    <th className="px-4 py-3 text-right font-medium" title="Unidades físicas en el almacén">
+                      En stock
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium" title="Disponible para vender (stock menos reservado)">
+                      Disponible
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium" title="Unidades en tránsito por transferencias">
+                      En tránsito
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium" title="Costo promedio por unidad">
+                      Costo prom.
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium" title="Valorizado = stock × costo promedio">
+                      Valor
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium" title="Nivel mínimo para alertar reabastecimiento (editable)">
+                      Stock mínimo
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -336,9 +360,16 @@ export default function InventarioPage() {
                         }`}
                       >
                         <td className="px-4 py-2.5">
-                          <p className="font-medium">
-                            {it.productoNombre ?? it.nombre}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">
+                              {it.productoNombre ?? it.nombre}
+                            </p>
+                            {it.bajoMinimo ? (
+                              <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                Bajo mínimo
+                              </span>
+                            ) : null}
+                          </div>
                           <p className="font-mono text-xs text-muted-foreground">
                             {it.sku}
                             {it.nombre && it.nombre !== it.productoNombre
@@ -501,11 +532,11 @@ function NivelMinimo({
           setMax(it.stockMaximo)
           setEditando(true)
         }}
-        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm tabular-nums transition-colors hover:bg-muted"
-        title="Definir stock mínimo"
+        className="inline-flex items-center gap-1 rounded-lg border border-dashed border-transparent px-2 py-1 text-sm tabular-nums transition-colors hover:border-border hover:bg-muted"
+        title="Editar stock mínimo (se guarda al instante)"
       >
         <span className={tieneMin ? "" : "text-muted-foreground"}>
-          {tieneMin ? num(it.stockMinimo) : "—"}
+          {tieneMin ? num(it.stockMinimo) : "Definir"}
         </span>
         <RiEditLine className="size-3.5 text-muted-foreground" />
       </button>
@@ -521,7 +552,8 @@ function NivelMinimo({
         value={min}
         onChange={(e) => setMin(e.target.value)}
         className="h-8 w-20"
-        title="Mínimo"
+        placeholder="mín"
+        title="Stock mínimo (dispara la alerta)"
       />
       <Input
         type="number"
@@ -530,13 +562,15 @@ function NivelMinimo({
         value={max}
         onChange={(e) => setMax(e.target.value)}
         className="h-8 w-20"
-        title="Objetivo (máx, opcional)"
+        placeholder="objetivo"
+        title="Objetivo de reposición (opcional)"
       />
       <Button
         type="button"
         size="icon"
         variant="ghost"
         disabled={m.isPending}
+        title="Guardar"
         onClick={() => m.mutate()}
       >
         <RiCheckLine />
@@ -545,6 +579,7 @@ function NivelMinimo({
         type="button"
         size="icon"
         variant="ghost"
+        title="Cancelar"
         onClick={() => setEditando(false)}
       >
         <RiCloseLine />
