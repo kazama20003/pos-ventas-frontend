@@ -111,3 +111,27 @@ export const cerrarCaja = (dto: CerrarCajaDto) =>
     montoDeclarado: string
     diferencia: string
   }>("/caja/sesiones/cerrar", { method: "POST", body: dto })
+
+// ---- Operadores de caja (qué caja puede abrir cada usuario) ----
+
+export type CajaSimple = { id: string; codigo: string; nombre: string }
+
+/** Cajas que el usuario actual puede abrir en la sucursal. */
+export const misCajas = (sucursalId: string) =>
+  authedFetch<CajaSimple[]>(
+    `/caja/mis-cajas?sucursalId=${encodeURIComponent(sucursalId)}`
+  )
+
+/** (Admin) Cajas asignadas a un usuario. */
+export const operadorCajas = (identidadUsuarioId: string) =>
+  authedFetch<string[]>(`/caja/operadores/${identidadUsuarioId}`)
+
+/** (Admin) Reemplaza las cajas asignadas a un usuario. */
+export const asignarCajasOperador = (
+  identidadUsuarioId: string,
+  cajaIds: string[]
+) =>
+  authedFetch<{ identidadUsuarioId: string; cajas: string[] }>(
+    `/caja/operadores/${identidadUsuarioId}`,
+    { method: "PUT", body: { cajaIds } }
+  )

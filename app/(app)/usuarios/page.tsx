@@ -37,7 +37,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ApiError } from "@/lib/api/client"
-import { listarSucursales } from "@/lib/api/organizacion"
+import { listarCajas, listarSucursales } from "@/lib/api/organizacion"
+import {
+  asignarCajasOperador,
+  operadorCajas,
+} from "@/lib/api/caja"
 import {
   actualizarUsuario,
   cambiarEstadoUsuario,
@@ -548,6 +552,114 @@ function InvitarSheet({
 /* Editar usuario (Sheet)                                             */
 /* ------------------------------------------------------------------ */
 
+/** Cajas que un usuario puede abrir. Sin ninguna marcada, no abre (estricto). */
+function CajasAsignadas({
+  identidadUsuarioId,
+  sucursales,
+}: {
+  identidadUsuarioId: string
+  sucursales: Suc[]
+}) {
+  const qc = useQueryClient()
+  const cajas = useQuery({
+    queryKey: ["cajas-todas"],
+    queryFn: () => listarCajas(),
+  })
+  const asignadas = useQuery({
+    queryKey: ["operador-cajas", identidadUsuarioId],
+    queryFn: () => operadorCajas(identidadUsuarioId),
+  })
+  const [sel, setSel] = React.useState<Set<string>>(new Set())
+  const [init, setInit] = React.useState(false)
+  React.useEffect(() => {
+    if (!init && asignadas.data) {
+      setSel(new Set(asignadas.data))
+      setInit(true)
+    }
+  }, [asignadas.data, init])
+
+  const sucMap = new Map(sucursales.map((s) => [s.id, s.nombre]))
+  const m = useMutation({
+    mutationFn: () => asignarCajasOperador(identidadUsuarioId, [...sel]),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: ["operador-cajas", identidadUsuarioId],
+      }),
+  })
+
+  if (cajas.isLoading || asignadas.isLoading) {
+    return <Skeleton className="h-24 w-full rounded-xl" />
+  }
+  const lista = (cajas.data ?? []).filter((c) => c.estado === "ACTIVO")
+  if (lista.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No hay cajas creadas. Créalas en Sucursales.
+      </p>
+    )
+  }
+
+  return (
+    <div className="grid gap-2">
+      <p className="text-xs text-muted-foreground">
+        Marca las cajas que este usuario puede abrir. Sin ninguna marcada no
+        podrá abrir caja (los administradores abren cualquiera).
+      </p>
+      <div className="max-h-52 overflow-y-auto rounded-lg border">
+        {lista.map((c) => {
+          const on = sel.has(c.id)
+          return (
+            <button
+              type="button"
+              key={c.id}
+              onClick={() =>
+                setSel((p) => {
+                  const n = new Set(p)
+                  if (n.has(c.id)) n.delete(c.id)
+                  else n.add(c.id)
+                  return n
+                })
+              }
+              className={`flex w-full items-center gap-2 border-b px-3 py-2 text-left text-sm last:border-0 hover:bg-muted/50 ${
+                on ? "bg-primary/5" : ""
+              }`}
+            >
+              <span
+                className={`flex size-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+                  on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-muted-foreground/40"
+                }`}
+              >
+                {on ? "✓" : ""}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {sucMap.get(c.sucursalId) ?? ""}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={m.isPending}
+          onClick={() => m.mutate()}
+        >
+          {m.isPending ? "Guardando…" : "Guardar cajas"}
+        </Button>
+        {m.isSuccess && !m.isPending ? (
+          <span className="text-xs text-emerald-600 dark:text-emerald-400">
+            Guardado
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function EditarUsuario({
   usuario,
   roles,
@@ -624,6 +736,13 @@ function EditarUsuario({
             sucursales={sucursales}
             valor={asignaciones}
             onChange={setAsignaciones}
+          />
+        </Campo>
+
+        <Campo label="Cajas que puede abrir">
+          <CajasAsignadas
+            identidadUsuarioId={usuario.identidadUsuarioId}
+            sucursales={sucursales}
           />
         </Campo>
 

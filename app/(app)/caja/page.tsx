@@ -40,6 +40,7 @@ import {
   abrirCaja,
   cerrarCaja,
   listarSesiones,
+  misCajas,
   movimientosCaja,
   registrarMovimiento,
   resumenCaja,
@@ -49,7 +50,6 @@ import {
   type SesionCajaResumen,
   type TipoMovimientoManual,
 } from "@/lib/api/caja"
-import { listarCajas, type Caja } from "@/lib/api/organizacion"
 import { useSucursalActiva } from "@/hooks/use-sucursal-activa"
 import { usePermisos } from "@/hooks/use-permisos"
 
@@ -141,14 +141,12 @@ function AbrirCaja({ sucursalId }: { sucursalId: string }) {
   const { can } = usePermisos()
   const puede = can("caja.abrir")
 
+  // Solo las cajas que este usuario puede abrir (asignadas, o todas si es admin).
   const cajas = useQuery({
-    queryKey: ["cajas", sucursalId],
-    queryFn: () => listarCajas(sucursalId),
+    queryKey: ["mis-cajas", sucursalId],
+    queryFn: () => misCajas(sucursalId),
   })
-  const activas = React.useMemo(
-    () => (cajas.data ?? []).filter((c: Caja) => c.estado === "ACTIVO"),
-    [cajas.data]
-  )
+  const activas = cajas.data ?? []
 
   const [cajaId, setCajaId] = React.useState("")
   const [monto, setMonto] = React.useState("")
@@ -188,8 +186,8 @@ function AbrirCaja({ sucursalId }: { sucursalId: string }) {
     return (
       <Aviso
         icon={RiErrorWarningLine}
-        titulo="Sin cajas activas"
-        texto="Esta sucursal no tiene cajas. Créalas en Organización → Sucursales para abrir turno."
+        titulo="Sin cajas disponibles"
+        texto="No tienes cajas asignadas en esta sucursal. Pide a un administrador que te asigne una en Usuarios."
       />
     )
   }
