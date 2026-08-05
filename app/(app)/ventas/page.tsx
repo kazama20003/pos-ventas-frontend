@@ -38,6 +38,7 @@ import {
   type SerieComprobante,
   type VentaCreada,
 } from "@/lib/api/ventas"
+import { promocionesAplicables } from "@/lib/api/promociones"
 import { useSucursalActiva } from "@/hooks/use-sucursal-activa"
 
 const sol = (v: string | number) =>
@@ -454,8 +455,27 @@ function PanelCobro({
   const [metodo, setMetodo] = React.useState<MetodoPago>("EFECTIVO")
   const [recibido, setRecibido] = React.useState("")
 
-  const total = carrito.reduce((acc, l) => acc + l.precio * l.cantidad, 0)
+  const [aplicarPromos, setAplicarPromos] = React.useState(true)
+
+  const bruto = carrito.reduce((acc, l) => acc + l.precio * l.cantidad, 0)
   const items = carrito.reduce((acc, l) => acc + l.cantidad, 0)
+
+  // Promociones detectadas por el backend para este carrito (vista previa).
+  const promoItems = carrito.map((l) => ({
+    varianteId: l.varianteId,
+    cantidad: l.cantidad,
+  }))
+  const promos = useQuery({
+    queryKey: ["promos-aplicables", sucursalId, JSON.stringify(promoItems)],
+    queryFn: () => promocionesAplicables({ sucursalId, items: promoItems }),
+    enabled: carrito.length > 0,
+  })
+  const descuento =
+    aplicarPromos ? Number(promos.data?.totalDescuento ?? 0) : 0
+  const promocionIds = aplicarPromos ? (promos.data?.promocionIds ?? []) : []
+  const hayPromo = Number(promos.data?.totalDescuento ?? 0) > 0
+
+  const total = Math.max(0, bruto - descuento)
   const esEfectivo = metodo === "EFECTIVO"
   const recibidoNum = Number(recibido) || 0
   const vuelto = esEfectivo ? Math.max(0, recibidoNum - total) : 0
@@ -474,6 +494,7 @@ function PanelCobro({
           varianteId: l.varianteId,
           cantidad: l.cantidad,
         })),
+        promocionIds: promocionIds.length ? promocionIds : undefined,
         pagos: [{ method: metodo, monto: total }],
       })
     },
@@ -509,6 +530,41 @@ function PanelCobro({
             {items} artículo{items === 1 ? "" : "s"} · IGV incluido
           </p>
         </div>
+
+        {/* Promoción detectada: el cajero confirma o decide no aplicarla. */}
+        {hayPromo ? (
+          <button
+            type="button"
+            onClick={() => setAplicarPromos((v) => !v)}
+            className={`mt-4 flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${
+              aplicarPromos
+                ? "border-emerald-400/40 bg-emerald-400/10"
+                : "border-white/15 bg-white/5"
+            }`}
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">
+                {aplicarPromos ? "Descuento aplicado" : "Descuento disponible"}
+              </p>
+              <p className="truncate text-xs text-white/50">
+                {aplicarPromos
+                  ? `Ahorro ${sol(descuento)} · antes ${sol(bruto)}`
+                  : `Toca para aplicar ${sol(Number(promos.data?.totalDescuento ?? 0))}`}
+              </p>
+            </div>
+            <span
+              className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                aplicarPromos ? "bg-emerald-400" : "bg-white/20"
+              }`}
+            >
+              <span
+                className={`size-5 rounded-full bg-white transition ${
+                  aplicarPromos ? "translate-x-5" : ""
+                }`}
+              />
+            </span>
+          </button>
+        ) : null}
 
         {/* Serie */}
         {series.length > 1 ? (

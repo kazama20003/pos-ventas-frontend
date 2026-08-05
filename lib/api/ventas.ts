@@ -57,6 +57,8 @@ export type CrearVentaDto = {
   idempotencyKey: string
   items: ItemVentaDto[]
   pagos?: PagoDto[]
+  /** Promociones que el cajero confirmó aplicar; el backend las revalida. */
+  promocionIds?: string[]
 }
 
 export type VentaCreada = {
