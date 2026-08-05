@@ -57,7 +57,7 @@ export default function DashboardPage() {
         description="Resumen de la operación de hoy"
         actions={<Button size="sm">Nueva venta</Button>}
       />
-      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4 md:p-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((s) => (
             <Card key={s.label}>

@@ -156,6 +156,7 @@ export default function HistorialVentasPage() {
         }
       />
 
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto p-5">
       {!sucursalId ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-16 text-center">
           <RiStore2Line className="size-8 text-muted-foreground" />
@@ -338,6 +339,7 @@ export default function HistorialVentasPage() {
           </div>
         </div>
       )}
+      </div>
     </>
   )
 }

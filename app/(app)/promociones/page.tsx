@@ -110,7 +110,7 @@ export default function PromocionesPage() {
         description="Campañas de oferta por vigencia. En caja se aplican solas y el cajero confirma."
       />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-5">
         {/* Barra superior: empresa + filtros + nueva */}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-wrap items-end gap-3">
