@@ -39,7 +39,10 @@ const MODULOS: Modulo[] = [
     route: "/ventas",
     icon: "M4 5h2l2.2 10.5a1 1 0 0 0 1 .8h8.6a1 1 0 0 0 1-.78L21 9H6.4",
     icon2: "M9.5 20h.01M17.5 20h.01",
-    subs: [{ label: "Punto de venta", route: "/ventas" }],
+    subs: [
+      { label: "Punto de venta", route: "/ventas" },
+      { label: "Ventas realizadas", route: "/ventas/historial" },
+    ],
     perm: ["ventas.crear", "ventas.devolver"],
   },
   {
