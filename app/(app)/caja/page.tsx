@@ -979,39 +979,43 @@ function Linea({
 function HistorialTurnos({ sucursalId }: { sucursalId: string }) {
   const q = useQuery({
     queryKey: ["sesiones", sucursalId],
-    queryFn: () => listarSesiones(sucursalId, 20),
+    queryFn: () => listarSesiones(sucursalId, 30),
   })
-  const cerradas = (q.data ?? []).filter((s) => s.estado !== "ABIERTA")
+  const sesiones = q.data ?? []
 
   if (q.isLoading) {
     return <Skeleton className="h-40 w-full rounded-xl" />
   }
-  if (cerradas.length === 0) return null
+  if (sesiones.length === 0) return null
 
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b px-5 py-3.5">
-        <h3 className="text-sm font-semibold">Turnos anteriores</h3>
+        <h3 className="text-sm font-semibold">Historial de caja</h3>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground tabular-nums">
-          {cerradas.length}
+          {sesiones.length}
         </span>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="pl-5">Caja</TableHead>
-            <TableHead>Cerrado</TableHead>
-            <TableHead className="text-right">Esperado</TableHead>
-            <TableHead className="text-right">Contado</TableHead>
-            <TableHead className="pr-5 text-right">Diferencia</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {cerradas.map((s) => (
-            <FilaTurno key={s.id} s={s} />
-          ))}
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="pl-5">Caja</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Apertura</TableHead>
+              <TableHead>Cierre</TableHead>
+              <TableHead className="text-right">Esperado</TableHead>
+              <TableHead className="text-right">Contado</TableHead>
+              <TableHead className="pr-5 text-right">Diferencia</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sesiones.map((s) => (
+              <FilaTurno key={s.id} s={s} />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
@@ -1019,6 +1023,7 @@ function HistorialTurnos({ sucursalId }: { sucursalId: string }) {
 function FilaTurno({ s }: { s: SesionCajaResumen }) {
   const dif = s.diferencia != null ? Number(s.diferencia) : null
   const cuadra = dif != null && Math.abs(dif) < 0.005
+  const abierta = s.estado === "ABIERTA"
   return (
     <TableRow>
       <TableCell className="pl-5">
@@ -1027,8 +1032,33 @@ function FilaTurno({ s }: { s: SesionCajaResumen }) {
           {s.caja.codigo}
         </div>
       </TableCell>
+      <TableCell>
+        <Badge
+          variant="secondary"
+          className={
+            abierta
+              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+              : "bg-muted text-muted-foreground"
+          }
+        >
+          {abierta ? "Abierta" : "Cerrada"}
+        </Badge>
+      </TableCell>
       <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
-        {s.cerradoEn ? fecha(s.cerradoEn) : "—"}
+        <div>{fecha(s.abiertoEn)}</div>
+        <div>
+          {s.abiertoPor ?? "—"} · {sol(s.montoApertura)}
+        </div>
+      </TableCell>
+      <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+        {s.cerradoEn ? (
+          <>
+            <div>{fecha(s.cerradoEn)}</div>
+            <div>{s.cerradoPor ?? "—"}</div>
+          </>
+        ) : (
+          "En curso"
+        )}
       </TableCell>
       <TableCell className="text-right tabular-nums">
         {s.efectivoEsperado != null ? sol(s.efectivoEsperado) : "—"}

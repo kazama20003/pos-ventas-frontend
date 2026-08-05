@@ -82,6 +82,8 @@ export type SesionCajaResumen = {
   estado: EstadoSesionCaja
   abiertoEn: string
   cerradoEn: string | null
+  abiertoPor: string | null
+  cerradoPor: string | null
   caja: { codigo: string; nombre: string }
   montoApertura: string
   efectivoEsperado: string | null
