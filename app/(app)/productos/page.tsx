@@ -99,7 +99,7 @@ export default function ProductosPage() {
         title="Productos"
         description="Todo lo que vendes, en un solo lugar"
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" size="sm" render={<Link href="/productos/importar" />}>
               <RiUploadCloud2Line />
               Importar

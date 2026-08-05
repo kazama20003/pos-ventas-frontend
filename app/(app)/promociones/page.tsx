@@ -123,7 +123,7 @@ export default function PromocionesPage() {
                   value: e.id,
                   label: e.razonSocial,
                 }))}
-                className="w-64"
+                className="w-full sm:w-64"
               />
             </div>
             <div className="grid gap-1.5">
@@ -138,7 +138,7 @@ export default function PromocionesPage() {
                   { value: "PAUSADA", label: "Pausada" },
                   { value: "EXPIRADA", label: "Expirada" },
                 ]}
-                className="w-44"
+                className="w-full sm:w-44"
               />
             </div>
           </div>

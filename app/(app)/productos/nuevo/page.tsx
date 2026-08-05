@@ -374,7 +374,7 @@ export default function NuevoProductoPage() {
                             value={codigo}
                             onChange={(e) => setCodigo(e.target.value)}
                             placeholder={codigoPreview}
-                            className="h-11 font-mono"
+                            className="h-11 min-w-0 font-mono"
                           />
                           <Button
                             type="button"
@@ -498,7 +498,7 @@ export default function NuevoProductoPage() {
                   <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
                     <Campo label="Código de barras" hint="opcional">
                       <div className="flex gap-2">
-                        <div className="relative flex-1">
+                        <div className="relative min-w-0 flex-1">
                           <RiBarcodeLine className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             value={barcode}

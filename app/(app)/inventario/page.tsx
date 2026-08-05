@@ -379,7 +379,7 @@ export default function InventarioPage() {
 
             {/* Paginación */}
             {d && d.total > 0 ? (
-              <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm">
                 <span className="text-xs text-muted-foreground">
                   {d.total} fila(s){d.truncado ? " (tope 5000)" : ""} · pág.{" "}
                   {d.page}/{d.totalPages}

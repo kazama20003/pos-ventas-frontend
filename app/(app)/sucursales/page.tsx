@@ -852,7 +852,7 @@ function SubTabla({
   return (
     <div className="flex flex-col gap-3">
       {/* Alta rápida */}
-      <div className="flex gap-2 rounded-xl border bg-muted/30 p-2">
+      <div className="flex flex-wrap gap-2 rounded-xl border bg-muted/30 p-2">
         <Input
           value={nuevo}
           onChange={(e) => setNuevo(e.target.value)}
@@ -986,11 +986,11 @@ function FilaSub({
     return (
       <TableRow className="hover:bg-transparent">
         <TableCell colSpan={2}>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="h-9 flex-1"
+              className="h-9 min-w-0 flex-1"
               autoFocus
             />
             {conTipo ? (
