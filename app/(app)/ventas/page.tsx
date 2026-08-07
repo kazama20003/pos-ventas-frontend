@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import {
   RiAddLine,
@@ -487,7 +488,7 @@ function PanelCobro({
         empresaId: ctx!.empresaId,
         sucursalId,
         serieId,
-        sesionCajaId: esEfectivo ? (sesionCajaId ?? undefined) : undefined,
+        sesionCajaId: sesionCajaId ?? undefined,
         moneda: ctx!.moneda,
         idempotencyKey: idemRef.current,
         items: carrito.map((l) => ({
@@ -499,13 +500,20 @@ function PanelCobro({
       })
     },
     onSuccess: (v) => {
+      toast.success(`Venta ${v.number} cobrada`, {
+        description: `Total ${sol(v.total)}`,
+      })
       onVenta(v, vuelto)
       setRecibido("")
+    },
+    onError: (e) => {
+      toast.error("No se pudo cobrar", { description: errMsg(e) ?? undefined })
     },
   })
   const err = errMsg(m.error)
 
-  const faltaCaja = esEfectivo && !sesionCajaId
+  // Toda venta exige una caja abierta (no solo las de efectivo).
+  const faltaCaja = !sesionCajaId
   const faltaEfectivo = esEfectivo && recibido !== "" && recibidoNum < total
   const bloqueado =
     carrito.length === 0 ||
@@ -516,17 +524,15 @@ function PanelCobro({
     m.isPending
 
   return (
-    <aside className="relative flex min-h-0 flex-col overflow-hidden border-l bg-gradient-to-b from-zinc-900 to-zinc-950 text-white">
-      <div className="pointer-events-none absolute -right-24 top-10 size-64 rounded-full bg-primary/20 blur-3xl" />
-
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-auto p-6">
+    <aside className="flex min-h-0 flex-col overflow-hidden border-l bg-muted/30">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
         {/* Total */}
         <div>
-          <p className="text-sm text-white/50">Total a cobrar</p>
+          <p className="text-sm text-muted-foreground">Total a cobrar</p>
           <p className="text-5xl font-semibold tracking-tight tabular-nums">
             {sol(total)}
           </p>
-          <p className="mt-1 text-xs text-white/40">
+          <p className="mt-1 text-xs text-muted-foreground">
             {items} artículo{items === 1 ? "" : "s"} · IGV incluido
           </p>
         </div>
@@ -538,15 +544,15 @@ function PanelCobro({
             onClick={() => setAplicarPromos((v) => !v)}
             className={`mt-4 flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${
               aplicarPromos
-                ? "border-emerald-400/40 bg-emerald-400/10"
-                : "border-white/15 bg-white/5"
+                ? "border-emerald-500/40 bg-emerald-500/10"
+                : "border-border bg-card"
             }`}
           >
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-medium">
                 {aplicarPromos ? "Descuento aplicado" : "Descuento disponible"}
               </p>
-              <p className="truncate text-xs text-white/50">
+              <p className="truncate text-xs text-muted-foreground">
                 {aplicarPromos
                   ? `Ahorro ${sol(descuento)} · antes ${sol(bruto)}`
                   : `Toca para aplicar ${sol(Number(promos.data?.totalDescuento ?? 0))}`}
@@ -554,11 +560,11 @@ function PanelCobro({
             </div>
             <span
               className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                aplicarPromos ? "bg-emerald-400" : "bg-white/20"
+                aplicarPromos ? "bg-emerald-500" : "bg-muted-foreground/30"
               }`}
             >
               <span
-                className={`size-5 rounded-full bg-white transition ${
+                className={`size-5 rounded-full bg-white shadow transition ${
                   aplicarPromos ? "translate-x-5" : ""
                 }`}
               />
@@ -569,7 +575,7 @@ function PanelCobro({
         {/* Serie */}
         {series.length > 1 ? (
           <div className="mt-6">
-            <p className="mb-2 text-xs text-white/50">Comprobante</p>
+            <p className="mb-2 text-xs text-muted-foreground">Comprobante</p>
             <div className="flex flex-wrap gap-1.5">
               {series.map((s) => (
                 <button
@@ -578,8 +584,8 @@ function PanelCobro({
                   onClick={() => onSerie(s.id)}
                   className={`rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 transition-colors ${
                     s.id === serieId
-                      ? "bg-white/15 text-white ring-white/25"
-                      : "text-white/60 ring-white/10 hover:bg-white/10"
+                      ? "bg-primary/10 text-primary ring-primary/30"
+                      : "text-muted-foreground ring-border hover:bg-muted"
                   }`}
                 >
                   {s.documentType} {s.series}
@@ -591,7 +597,7 @@ function PanelCobro({
 
         {/* Método de pago */}
         <div className="mt-6">
-          <p className="mb-2 text-xs text-white/50">Método de pago</p>
+          <p className="mb-2 text-xs text-muted-foreground">Método de pago</p>
           <div className="grid grid-cols-2 gap-2">
             {METODOS.map((mt) => {
               const on = metodo === mt.value
@@ -603,8 +609,8 @@ function PanelCobro({
                   onClick={() => setMetodo(mt.value)}
                   className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ring-1 transition-all ${
                     on
-                      ? "bg-white text-zinc-900 ring-white"
-                      : "text-white/70 ring-white/10 hover:bg-white/10"
+                      ? "bg-primary text-primary-foreground ring-primary"
+                      : "bg-card text-muted-foreground ring-border hover:bg-muted"
                   }`}
                 >
                   <Icon className="size-4" />
@@ -618,7 +624,9 @@ function PanelCobro({
         {/* Efectivo recibido / vuelto */}
         {esEfectivo ? (
           <div className="mt-6">
-            <p className="mb-2 text-xs text-white/50">Efectivo recibido</p>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Efectivo recibido
+            </p>
             <input
               inputMode="decimal"
               value={recibido}
@@ -626,7 +634,7 @@ function PanelCobro({
                 setRecibido(e.target.value.replace(/[^0-9.]/g, ""))
               }
               placeholder="0.00"
-              className="h-12 w-full rounded-xl border border-white/15 bg-white/5 px-4 text-xl tabular-nums text-white outline-none placeholder:text-white/30 focus:border-white/40"
+              className="h-12 w-full rounded-xl border bg-card px-4 text-xl tabular-nums outline-none placeholder:text-muted-foreground/50 focus:border-primary"
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
               {[total, 20, 50, 100, 200].map((v, i) => (
@@ -634,15 +642,15 @@ function PanelCobro({
                   key={i}
                   type="button"
                   onClick={() => setRecibido(v.toFixed(2))}
-                  className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white/70 transition-colors hover:bg-white/20"
+                  className="rounded-lg bg-muted px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/70"
                 >
                   {i === 0 ? "Exacto" : sol(v)}
                 </button>
               ))}
             </div>
             {recibido !== "" ? (
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
-                <span className="text-sm text-white/60">Vuelto</span>
+              <div className="mt-3 flex items-center justify-between rounded-xl border bg-card px-4 py-3">
+                <span className="text-sm text-muted-foreground">Vuelto</span>
                 <span className="text-lg font-semibold tabular-nums">
                   {sol(vuelto)}
                 </span>
@@ -653,19 +661,25 @@ function PanelCobro({
 
         {/* Avisos */}
         {faltaCaja ? (
-          <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3 py-2 text-xs text-amber-300">
+          <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
             <RiInformationLine className="size-4 shrink-0" />
-            Abre una caja para cobrar en efectivo.
+            <span>
+              No hay caja abierta. Abre tu turno en{" "}
+              <a href="/caja" className="font-semibold underline">
+                Caja
+              </a>{" "}
+              para poder vender.
+            </span>
           </p>
         ) : null}
         {faltaEfectivo ? (
-          <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3 py-2 text-xs text-amber-300">
+          <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
             <RiInformationLine className="size-4 shrink-0" />
             El efectivo recibido no cubre el total.
           </p>
         ) : null}
         {err ? (
-          <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-destructive/20 px-3 py-2 text-xs text-red-300">
+          <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
             <RiErrorWarningLine className="size-4 shrink-0" />
             {err}
           </p>
@@ -673,12 +687,12 @@ function PanelCobro({
       </div>
 
       {/* Cobrar */}
-      <div className="relative border-t border-white/10 p-4">
+      <div className="border-t bg-background/60 p-4">
         <button
           type="button"
           disabled={bloqueado || cargando}
           onClick={() => m.mutate()}
-          className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
         >
           <RiCheckLine className="size-5" />
           {m.isPending ? "Cobrando…" : `Cobrar ${sol(total)}`}

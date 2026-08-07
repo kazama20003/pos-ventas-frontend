@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   RiArrowDownLine,
@@ -161,10 +162,15 @@ function AbrirCaja({ sucursalId }: { sucursalId: string }) {
         montoApertura: Number(monto || 0),
       }),
     onSuccess: (s) => {
+      toast.success("Caja abierta", { description: "Turno iniciado." })
       setSesionCaja(s.id)
       qc.invalidateQueries({ queryKey: ["sesion-abierta", sucursalId] })
       qc.invalidateQueries({ queryKey: ["sesiones", sucursalId] })
     },
+    onError: (e) =>
+      toast.error("No se pudo abrir la caja", {
+        description: errMsg(e) ?? undefined,
+      }),
   })
   const err = errMsg(m.error)
   const montoValido = monto !== "" && Number(monto) >= 0
@@ -717,10 +723,15 @@ function CerrarCajaSheet({
         conteos: porDenoms && conteos.length ? conteos : undefined,
       }),
     onSuccess: () => {
+      toast.success("Caja cerrada", { description: "Arqueo registrado." })
       setSesionCaja(null)
       qc.invalidateQueries({ queryKey: ["sesion-abierta", sucursalId] })
       qc.invalidateQueries({ queryKey: ["sesiones", sucursalId] })
     },
+    onError: (e) =>
+      toast.error("No se pudo cerrar la caja", {
+        description: errMsg(e) ?? undefined,
+      }),
   })
   const err = errMsg(m.error)
 

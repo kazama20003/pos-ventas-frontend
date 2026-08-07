@@ -1,3 +1,4 @@
+import { Toaster } from "sonner"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-[0_12px_40px_rgba(20,15,35,0.10)]">
         {children}
       </main>
+      <Toaster richColors closeButton position="top-right" />
     </div>
   )
 }
