@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import { useReactToPrint } from "react-to-print"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import {
   RiAddLine,
@@ -12,6 +13,7 @@ import {
   RiExchangeLine,
   RiInformationLine,
   RiMoneyDollarCircleLine,
+  RiPrinterLine,
   RiSearchLine,
   RiShoppingCart2Line,
   RiSmartphoneLine,
@@ -81,6 +83,13 @@ type LineaCarrito = {
   cantidad: number
 }
 
+type TicketSnap = {
+  items: { nombre: string; cantidad: number; precio: number }[]
+  metodo: string
+  fecha: string
+  sucursalNombre: string
+}
+
 const METODOS: {
   value: MetodoPago
   label: string
@@ -114,6 +123,7 @@ export default function VentasPage() {
   const [serieId, setSerieId] = React.useState("")
   const [ticket, setTicket] = React.useState<VentaCreada | null>(null)
   const [vueltoTicket, setVueltoTicket] = React.useState(0)
+  const [ticketSnap, setTicketSnap] = React.useState<TicketSnap | null>(null)
   const idemRef = React.useRef<string | null>(null)
 
   const series = ctx.data?.series ?? []
@@ -162,6 +172,7 @@ export default function VentasPage() {
   const nuevaVenta = () => {
     setCarrito([])
     setTicket(null)
+    setTicketSnap(null)
     idemRef.current = null
   }
 
@@ -202,7 +213,7 @@ export default function VentasPage() {
               />
             </div>
 
-            {/* Panel derecho: cobro (Pro oscuro) */}
+            {/* Panel derecho: cobro */}
             <PanelCobro
               carrito={carrito}
               ctx={ctx.data}
@@ -213,9 +224,13 @@ export default function VentasPage() {
               onSerie={setSerieId}
               sucursalId={sucursalId}
               idemRef={idemRef}
-              onVenta={(v, vuelto) => {
+              onVenta={(v, vuelto, snap) => {
                 setTicket(v)
                 setVueltoTicket(vuelto)
+                setTicketSnap({
+                  ...snap,
+                  sucursalNombre: sucursal?.nombre ?? "",
+                })
               }}
             />
           </div>
@@ -237,6 +252,7 @@ export default function VentasPage() {
             <TicketVenta
               venta={ticket}
               vuelto={vueltoTicket}
+              snap={ticketSnap}
               onNueva={nuevaVenta}
             />
           ) : null}
@@ -451,7 +467,11 @@ function PanelCobro({
   onSerie: (id: string) => void
   sucursalId: string
   idemRef: React.RefObject<string | null>
-  onVenta: (v: VentaCreada, vuelto: number) => void
+  onVenta: (
+    v: VentaCreada,
+    vuelto: number,
+    snap: Omit<TicketSnap, "sucursalNombre">,
+  ) => void
 }) {
   const [metodo, setMetodo] = React.useState<MetodoPago>("EFECTIVO")
   const [recibido, setRecibido] = React.useState("")
@@ -503,7 +523,15 @@ function PanelCobro({
       toast.success(`Venta ${v.number} cobrada`, {
         description: `Total ${sol(v.total)}`,
       })
-      onVenta(v, vuelto)
+      onVenta(v, vuelto, {
+        items: carrito.map((l) => ({
+          nombre: l.producto,
+          cantidad: l.cantidad,
+          precio: l.precio,
+        })),
+        metodo,
+        fecha: new Date().toISOString(),
+      })
       setRecibido("")
     },
     onError: (e) => {
@@ -709,56 +737,89 @@ function PanelCobro({
 function TicketVenta({
   venta,
   vuelto,
+  snap,
   onNueva,
 }: {
   venta: VentaCreada
   vuelto: number
+  snap: TicketSnap | null
   onNueva: () => void
 }) {
+  const ticketRef = React.useRef<HTMLDivElement>(null)
+  const imprimir = useReactToPrint({
+    contentRef: ticketRef,
+    documentTitle: `Ticket-${venta.number}`,
+    pageStyle: "@page { size: 80mm auto; margin: 4mm } @media print { body { margin: 0 } }",
+  })
+  const fecha = snap?.fecha ? new Date(snap.fecha) : new Date()
+
   return (
-    <div className="flex flex-1 flex-col gap-5 overflow-auto p-6">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-          <RiCheckLine className="size-7" />
+    <div className="flex flex-1 flex-col gap-4 overflow-auto p-6">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="flex size-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+          <RiCheckLine className="size-6" />
         </span>
-        <div>
-          <p className="text-base font-semibold">¡Venta cobrada!</p>
-          <p className="font-mono text-sm text-muted-foreground">
-            {venta.number}
-          </p>
+        <p className="text-base font-semibold">¡Venta cobrada!</p>
+      </div>
+
+      {/* Ticket imprimible (vista previa + fuente de impresión) */}
+      <div className="rounded-xl border bg-white p-4 text-black">
+        <div ref={ticketRef} className="mx-auto max-w-[280px] font-mono text-[12px] leading-tight text-black">
+          <div className="text-center">
+            <p className="text-sm font-bold uppercase">
+              {snap?.sucursalNombre || "Comprobante"}
+            </p>
+            <p>{fecha.toLocaleString("es-PE")}</p>
+            <p className="font-bold">{venta.number}</p>
+          </div>
+          <div className="my-2 border-t border-dashed border-black" />
+          {(snap?.items ?? []).map((it, i) => (
+            <div key={i} className="flex justify-between gap-2">
+              <span className="min-w-0 flex-1 truncate">
+                {it.cantidad} x {it.nombre}
+              </span>
+              <span className="tabular-nums">{sol(it.precio * it.cantidad)}</span>
+            </div>
+          ))}
+          <div className="my-2 border-t border-dashed border-black" />
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span className="tabular-nums">{sol(venta.subtotal)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-bold">
+            <span>TOTAL</span>
+            <span className="tabular-nums">{sol(venta.total)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Pagado{snap?.metodo ? ` (${snap.metodo})` : ""}</span>
+            <span className="tabular-nums">{sol(venta.totalPagado)}</span>
+          </div>
+          {vuelto > 0 ? (
+            <div className="flex justify-between">
+              <span>Vuelto</span>
+              <span className="tabular-nums">{sol(vuelto)}</span>
+            </div>
+          ) : null}
+          <div className="my-2 border-t border-dashed border-black" />
+          <p className="text-center">¡Gracias por su compra!</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border">
-        <Fila label="Subtotal" valor={sol(venta.subtotal)} />
-        <Fila label="Total" valor={sol(venta.total)} fuerte />
-        <Fila label="Pagado" valor={sol(venta.totalPagado)} />
-        {vuelto > 0 ? <Fila label="Vuelto" valor={sol(vuelto)} fuerte /> : null}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={() => imprimir()}
+        >
+          <RiPrinterLine />
+          Imprimir
+        </Button>
+        <Button type="button" className="flex-1" onClick={onNueva}>
+          <RiAddLine />
+          Nueva venta
+        </Button>
       </div>
-
-      <Button type="button" size="lg" className="w-full" onClick={onNueva}>
-        <RiAddLine />
-        Nueva venta
-      </Button>
-    </div>
-  )
-}
-
-function Fila({
-  label,
-  valor,
-  fuerte,
-}: {
-  label: string
-  valor: string
-  fuerte?: boolean
-}) {
-  return (
-    <div className="flex items-center justify-between border-b px-4 py-2.5 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`tabular-nums ${fuerte ? "font-bold" : "font-medium"}`}>
-        {valor}
-      </span>
     </div>
   )
 }
