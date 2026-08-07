@@ -670,6 +670,8 @@ function EditarUsuario({
   sucursales: Suc[]
 }) {
   const qc = useQueryClient()
+  const { can } = usePermisos()
+  const puedeCajas = can("sucursales.gestionar")
   const [asignaciones, setAsignaciones] = React.useState<AsignacionRol[]>(
     usuario.roles.map((r) => ({
       rolId: r.id,
@@ -739,12 +741,14 @@ function EditarUsuario({
           />
         </Campo>
 
-        <Campo label="Cajas que puede abrir">
-          <CajasAsignadas
-            identidadUsuarioId={usuario.identidadUsuarioId}
-            sucursales={sucursales}
-          />
-        </Campo>
+        {puedeCajas ? (
+          <Campo label="Cajas que puede abrir">
+            <CajasAsignadas
+              identidadUsuarioId={usuario.identidadUsuarioId}
+              sucursales={sucursales}
+            />
+          </Campo>
+        ) : null}
 
         {invitada ? (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">

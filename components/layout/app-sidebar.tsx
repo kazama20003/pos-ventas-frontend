@@ -43,7 +43,9 @@ const MODULOS: Modulo[] = [
       { label: "Punto de venta", route: "/ventas" },
       { label: "Ventas realizadas", route: "/ventas/historial" },
     ],
-    perm: ["ventas.crear", "ventas.devolver"],
+    // Ambas vistas (POS e historial) requieren ventas.crear; evita mostrar el
+    // módulo a un rol solo-devolver cuyas páginas darían 403.
+    perm: ["ventas.crear"],
   },
   {
     label: "Caja",
