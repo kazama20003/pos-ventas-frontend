@@ -80,6 +80,8 @@ type LineaCarrito = {
   variante: string
   sku: string
   precio: number
+  /** Tributos de monto fijo por unidad (ICBPER), sumados aparte del precio. */
+  otrosTributos: number
   cantidad: number
 }
 
@@ -136,6 +138,10 @@ export default function VentasPage() {
   const agregar = (v: VarianteProducto, producto: string) => {
     const precio = precioDe(v, 1)
     if (precio == null) return
+    // Tributos de monto fijo por unidad (ej. ICBPER): se suman aparte del precio.
+    const otrosTributos = (v.taxes ?? [])
+      .filter((t) => t.tax.tipoCalculo === "MONTO_FIJO")
+      .reduce((acc, t) => acc + Number(t.tax.rate), 0)
     setCarrito((prev) => {
       const i = prev.findIndex((l) => l.varianteId === v.id)
       if (i >= 0) {
@@ -151,6 +157,7 @@ export default function VentasPage() {
           variante: v.nombre,
           sku: v.sku,
           precio,
+          otrosTributos,
           cantidad: 1,
         },
       ]
@@ -479,6 +486,10 @@ function PanelCobro({
   const [aplicarPromos, setAplicarPromos] = React.useState(true)
 
   const bruto = carrito.reduce((acc, l) => acc + l.precio * l.cantidad, 0)
+  const otrosTributos = carrito.reduce(
+    (acc, l) => acc + (l.otrosTributos ?? 0) * l.cantidad,
+    0,
+  )
   const items = carrito.reduce((acc, l) => acc + l.cantidad, 0)
 
   // Promociones detectadas por el backend para este carrito (vista previa).
@@ -496,7 +507,7 @@ function PanelCobro({
   const promocionIds = aplicarPromos ? (promos.data?.promocionIds ?? []) : []
   const hayPromo = Number(promos.data?.totalDescuento ?? 0) > 0
 
-  const total = Math.max(0, bruto - descuento)
+  const total = Math.max(0, bruto - descuento) + otrosTributos
   const esEfectivo = metodo === "EFECTIVO"
   const recibidoNum = Number(recibido) || 0
   const vuelto = esEfectivo ? Math.max(0, recibidoNum - total) : 0
