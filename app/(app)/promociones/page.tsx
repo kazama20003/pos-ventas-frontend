@@ -222,7 +222,7 @@ export default function PromocionesPage() {
                       {p.usoMaximo ? `/${p.usoMaximo}` : ""}
                     </TableCell>
                     <TableCell>
-                      <EstadoBadge estado={p.estado} />
+                      <EstadoBadge estado={p.estadoEfectivo} />
                     </TableCell>
                     <TableCell className="text-right">
                       {p.estado === "ACTIVA" ? (

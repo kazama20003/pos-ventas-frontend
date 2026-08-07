@@ -475,7 +475,7 @@ function EditorProducto({ producto: p }: { producto: Producto }) {
                                   )}
                                 >
                                   {entra ? "+" : "−"}
-                                  {money(m.cantidad)}
+                                  {money(Math.abs(Number(m.cantidad)))}
                                 </td>
                                 <td className="py-2 text-muted-foreground">
                                   {m.notas ?? "—"}

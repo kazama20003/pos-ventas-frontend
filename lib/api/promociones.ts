@@ -15,6 +15,8 @@ export type PromocionLista = {
   tipoBeneficio: TipoBeneficio
   valor: string | null
   estado: EstadoPromocion
+  /** Estado derivado por fechas (cosmético); el `estado` guardado no cambia. */
+  estadoEfectivo: EstadoPromocion
   prioridad: number
   iniciaEn: string
   terminaEn: string | null
