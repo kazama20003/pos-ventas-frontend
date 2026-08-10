@@ -33,7 +33,6 @@ export default function LoginPage() {
   const [cargando, setCargando] = React.useState(false)
   const [correo, setCorreo] = React.useState("")
   const [novedades, setNovedades] = React.useState(true)
-  const [usarBotonGoogle, setUsarBotonGoogle] = React.useState(false)
 
   async function ingresar(idToken: string, tenantCodigo?: string) {
     setError(null)
@@ -125,14 +124,9 @@ export default function LoginPage() {
       {error ? <ErrorBox mensaje={error} /> : null}
       {errorGoogle ? <ErrorBox mensaje={errorGoogle} /> : null}
 
-      <Button
-        size="lg"
-        className="h-12 w-full rounded-xl text-base font-semibold"
-        disabled={!listo || cargando}
-        onClick={() => prompt()}
-      >
-        Continuar con Google
-      </Button>
+      {/* Botón renderizado de Google (popup OAuth real). Confiable: no depende
+          de One Tap/FedCM, que Chrome bloquea con AbortError/NetworkError. */}
+      <GoogleButton onCredential={(token) => ingresar(token)} text="signin_with" />
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
@@ -187,17 +181,6 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      {usarBotonGoogle ? (
-        <GoogleButton onCredential={(token) => ingresar(token)} text="signin_with" />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setUsarBotonGoogle(true)}
-          className="text-center text-xs text-muted-foreground underline underline-offset-2"
-        >
-          ¿No se abre la ventana de Google?
-        </button>
-      )}
     </div>
   )
 }
