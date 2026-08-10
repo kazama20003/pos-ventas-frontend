@@ -1,266 +1,184 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  RiCheckboxCircleFill,
-  RiCloseLine,
-  RiLockLine,
-  RiRocketLine,
+  RiPriceTag3Line,
+  RiSafe2Line,
+  RiShoppingCart2Line,
+  RiTruckLine,
+  type RemixiconComponentType,
 } from "@remixicon/react"
 
 import { Button } from "@/components/ui/button"
-import { listarProductos } from "@/lib/api/catalogo"
-import { sesionAbierta } from "@/lib/api/caja"
-import { listarAlmacenes, listarSucursales } from "@/lib/api/organizacion"
-import { listarVentas } from "@/lib/api/ventas"
+import {
+  descartarOnboarding,
+  obtenerEstadoOnboarding,
+} from "@/lib/api/onboarding"
+import type { PasoOnboarding } from "@/lib/api/types"
 
-const DONE_KEY = "gekko.onboarding.done"
+type FocoPaso = Exclude<PasoOnboarding, "completado">
 
-type Step = {
-  label: string
-  description: string
+type Foco = {
+  icon: RemixiconComponentType
+  titulo: string
+  sub: string
+  cta: string
   href: string
-  action: string
-  complete: boolean
 }
 
+const FOCOS: Record<FocoPaso, Foco> = {
+  producto: {
+    icon: RiPriceTag3Line,
+    titulo: "Crea tu primer producto",
+    sub: "Un producto o un servicio para empezar a vender.",
+    cta: "Crear producto",
+    href: "/productos/nuevo",
+  },
+  stock: {
+    icon: RiTruckLine,
+    titulo: "Dale stock a tu producto",
+    sub: "Registra a tu proveedor y una compra para tener inventario.",
+    cta: "Registrar compra",
+    href: "/compras",
+  },
+  caja: {
+    icon: RiSafe2Line,
+    titulo: "Abre tu caja",
+    sub: "Inicia el turno con tu fondo para poder cobrar.",
+    cta: "Abrir caja",
+    href: "/caja",
+  },
+  venta: {
+    icon: RiShoppingCart2Line,
+    titulo: "Haz tu primera venta",
+    sub: "Elige productos, cobra y listo.",
+    cta: "Ir a vender",
+    href: "/ventas",
+  },
+}
+
+const ORDEN_BASE: FocoPaso[] = ["producto", "stock", "caja", "venta"]
+
 export function FirstSaleChecklist() {
-  const [descartado, setDescartado] = React.useState(false)
+  const queryClient = useQueryClient()
 
-  React.useEffect(() => {
-    if (typeof window === "undefined") return
-    if (localStorage.getItem(DONE_KEY) === "1") setDescartado(true)
-  }, [])
-
-  const sucursales = useQuery({
-    queryKey: ["onboarding-sucursales"],
-    queryFn: listarSucursales,
-  })
-  const sucursalId = sucursales.data?.[0]?.id
-  const almacenes = useQuery({
-    queryKey: ["onboarding-almacenes", sucursalId],
-    queryFn: () => listarAlmacenes(sucursalId),
-    enabled: !!sucursalId,
-  })
-  const productos = useQuery({
-    queryKey: ["onboarding-productos"],
-    queryFn: () => listarProductos({ pageSize: 1 }),
-  })
-  const caja = useQuery({
-    queryKey: ["onboarding-caja", sucursalId],
-    queryFn: () => sesionAbierta(sucursalId!),
-    enabled: !!sucursalId,
-  })
-  const ventas = useQuery({
-    queryKey: ["onboarding-ventas", sucursalId],
-    queryFn: () => listarVentas({ sucursalId: sucursalId!, pageSize: 1 }),
-    enabled: !!sucursalId,
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["onboarding-estado"],
+    queryFn: obtenerEstadoOnboarding,
+    refetchOnWindowFocus: true,
   })
 
-  const loading = sucursales.isLoading || productos.isLoading
-  if (loading || descartado) return null
+  const descartar = useMutation({
+    mutationFn: descartarOnboarding,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["onboarding-estado"] }),
+  })
 
-  const operacionLista =
-    (sucursales.data?.length ?? 0) > 0 && (almacenes.data?.length ?? 0) > 0
-  const steps: Step[] = [
-    {
-      label: "Tu operación está lista",
-      description:
-        "Creamos tu sucursal, almacén y caja principal para que empieces sin configurar lo básico.",
-      href: "/sucursales",
-      action: "Ver operación",
-      complete: operacionLista,
-    },
-    {
-      label: "Agrega tu primer producto",
-      description: "Registra el producto, su precio de venta y el stock inicial.",
-      href: "/productos/nuevo",
-      action: "Agregar producto",
-      complete: (productos.data?.total ?? 0) > 0,
-    },
-    {
-      label: "Abre tu caja",
-      description: "Inicia el turno con el fondo de caja antes de cobrar.",
-      href: "/caja",
-      action: "Abrir caja",
-      complete: !!caja.data,
-    },
-    {
-      label: "Realiza tu primera venta",
-      description: "Busca un producto, elige el pago y confirma el cobro.",
-      href: "/ventas",
-      action: "Ir a ventas",
-      complete: (ventas.data?.total ?? 0) > 0,
-    },
-  ]
-  const completed = steps.filter((step) => step.complete).length
-  // Índice del primer paso incompleto = paso "activo" que resaltamos.
-  const activeIndex = steps.findIndex((step) => !step.complete)
-  const todoListo = activeIndex === -1
+  if (isLoading || isError || !data) return null
+  if (data.descartado) return null
 
-  function descartar() {
-    if (typeof window !== "undefined") localStorage.setItem(DONE_KEY, "1")
-    setDescartado(true)
-  }
+  const completado =
+    data.pasoActual === "completado" || data.completadoEn !== null
 
-  if (todoListo) {
+  // Estado de felicitación: primera venta lograda.
+  if (completado) {
     return (
-      <section className="relative rounded-2xl border bg-card p-5 shadow-sm md:p-6">
-        <button
-          type="button"
-          onClick={descartar}
-          aria-label="Descartar guía"
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <RiCloseLine className="size-4" />
-        </button>
-        <div className="flex gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-            <RiCheckboxCircleFill className="size-5" />
+      <section className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-sm md:p-6">
+        <div className="flex items-start gap-4">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <RiShoppingCart2Line className="size-6" />
           </span>
-          <div>
-            <h2 className="font-semibold">
-              ¡Listo! Ya hiciste tu primera venta 🎉
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-semibold sm:text-xl">
+              ¡Listo! Hiciste tu primera venta 🎉
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tu punto de venta está en marcha. Puedes cerrar esta guía.
+              Tu punto de venta está en marcha.
             </p>
+            <Button
+              size="lg"
+              className="mt-4"
+              disabled={descartar.isPending}
+              onClick={() => descartar.mutate()}
+            >
+              Entendido
+            </Button>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4"
-          onClick={descartar}
-        >
-          Entendido
-        </Button>
       </section>
     )
   }
 
-  return (
-    <section className="rounded-2xl border bg-card p-5 shadow-sm md:p-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div className="flex gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <RiRocketLine className="size-5" />
-          </span>
-          <div>
-            <h2 className="font-semibold">Empieza a vender</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Sigue estos pasos en orden. Te guiaremos hasta tu primera venta.
-            </p>
-          </div>
-        </div>
-        <span className="shrink-0 text-sm font-medium text-muted-foreground">
-          {completed} de {steps.length}
-        </span>
-      </div>
+  // Orden de segmentos: excluye "stock" cuando no se necesita (servicios).
+  const orden = data.pasos.necesitaStock
+    ? ORDEN_BASE
+    : ORDEN_BASE.filter((p) => p !== "stock")
 
-      <div
-        className="mt-5 h-1.5 overflow-hidden rounded-full bg-muted"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={steps.length}
-        aria-valuenow={completed}
+  const pasoActual = data.pasoActual as FocoPaso
+  const foco = FOCOS[pasoActual]
+  const activeIndex = Math.max(0, orden.indexOf(pasoActual))
+  const Icono = foco.icon
+
+  return (
+    <section className="relative rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-sm ring-1 ring-primary/10 md:p-6">
+      <button
+        type="button"
+        onClick={() => descartar.mutate()}
+        disabled={descartar.isPending}
+        className="absolute right-4 top-4 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
       >
-        <div
-          className="h-full rounded-full bg-primary transition-[width] duration-500"
-          style={{ width: `${(completed / steps.length) * 100}%` }}
-        />
+        Ahora no
+      </button>
+
+      <div className="flex items-start gap-4 pr-16">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground sm:size-14">
+          <Icono className="size-6 sm:size-7" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg font-semibold sm:text-xl">{foco.titulo}</h2>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            {foco.sub}
+          </p>
+        </div>
       </div>
 
-      <ol className="mt-5 flex flex-col gap-3">
-        {steps.map((step, index) => {
-          const activo = index === activeIndex
-          const futuro = activeIndex !== -1 && index > activeIndex
-          return (
-            <li
-              key={step.label}
-              aria-current={activo ? "step" : undefined}
-              className={
-                activo
-                  ? "flex items-start gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4 ring-1 ring-primary/30"
-                  : futuro
-                    ? "flex items-center gap-3 rounded-xl border bg-background p-3 opacity-60"
-                    : "flex items-center gap-3 rounded-xl border bg-background p-3"
-              }
-            >
-              <StepIcon
-                index={index}
-                complete={step.complete}
-                activo={activo}
-                futuro={futuro}
-              />
-              <div className="min-w-0 flex-1">
-                <p
-                  className={
-                    step.complete
-                      ? "text-sm font-medium text-muted-foreground"
-                      : activo
-                        ? "font-semibold"
-                        : "text-sm font-medium"
-                  }
-                >
-                  {step.label}
-                </p>
-                {activo ? (
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                    {step.description}
-                  </p>
-                ) : null}
-              </div>
-              {activo ? (
-                <Button
-                  render={<Link href={step.href} />}
-                  className="shrink-0"
-                >
-                  {step.action}
-                </Button>
-              ) : futuro ? (
-                <RiLockLine
-                  className="size-4 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              ) : null}
-            </li>
-          )
-        })}
-      </ol>
-    </section>
-  )
-}
+      <div className="mt-5">
+        <Button
+          size="lg"
+          className="w-full sm:w-auto"
+          render={<Link href={foco.href} />}
+        >
+          {foco.cta}
+        </Button>
+      </div>
 
-function StepIcon({
-  index,
-  complete,
-  activo,
-  futuro,
-}: {
-  index: number
-  complete: boolean
-  activo: boolean
-  futuro: boolean
-}) {
-  if (complete) {
-    return (
-      <RiCheckboxCircleFill className="size-6 shrink-0 text-emerald-500" />
-    )
-  }
-  return (
-    <span
-      className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-        activo
-          ? "bg-primary text-primary-foreground"
-          : futuro
-            ? "bg-muted text-muted-foreground"
-            : "bg-muted text-muted-foreground"
-      }`}
-    >
-      {index + 1}
-    </span>
+      <div className="mt-5">
+        <div
+          className="flex gap-1.5"
+          role="progressbar"
+          aria-label={`Paso ${activeIndex + 1} de ${orden.length}`}
+          aria-valuemin={1}
+          aria-valuemax={orden.length}
+          aria-valuenow={activeIndex + 1}
+        >
+          {orden.map((paso, index) => (
+            <span
+              key={paso}
+              className={
+                index < activeIndex
+                  ? "h-1.5 flex-1 rounded-full bg-primary"
+                  : index === activeIndex
+                    ? "h-1.5 flex-1 rounded-full bg-primary/60 ring-2 ring-primary/40"
+                    : "h-1.5 flex-1 rounded-full bg-muted"
+              }
+            />
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Paso {activeIndex + 1} de {orden.length}
+        </p>
+      </div>
+    </section>
   )
 }

@@ -81,3 +81,23 @@ export interface RegistrarEmpresaResponse {
 /** Validaciones espejo del backend (class-validator). */
 export const TENANT_CODIGO_REGEX = /^[A-Za-z0-9_-]{3,40}$/
 export const RUC_REGEX = /^\d{11}$/
+
+export type PasoOnboarding =
+  | "producto"
+  | "stock"
+  | "caja"
+  | "venta"
+  | "completado"
+
+export interface EstadoOnboarding {
+  descartado: boolean
+  completadoEn: string | null
+  pasoActual: PasoOnboarding
+  pasos: {
+    productoCreado: boolean
+    necesitaStock: boolean
+    stockListo: boolean
+    cajaAbierta: boolean
+    primeraVenta: boolean
+  }
+}
