@@ -130,42 +130,69 @@ export function OnboardingFlow({ idToken }: { idToken: string }) {
 export const OnboardingForm = OnboardingFlow
 
 function Eleccion({ onElegir }: { onElegir: (modo: Eleccion) => void }) {
+  const [seleccion, setSeleccion] = React.useState<"rapido" | "manual" | null>(
+    "rapido"
+  )
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">¿Cómo quieres empezar?</h2>
         <p className="text-sm text-muted-foreground">
-          Elige la forma que mejor se adapte a ti. Podrás cambiar todo después.
+          Elige una opción y pulsa continuar. Podrás cambiar todo después.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div
+        role="radiogroup"
+        aria-label="Forma de empezar"
+        className="grid gap-3 sm:grid-cols-2"
+      >
         <TarjetaEleccion
-          onClick={() => onElegir("rapido")}
+          seleccionada={seleccion === "rapido"}
+          onSelect={() => setSeleccion("rapido")}
+          onConfirm={() => onElegir("rapido")}
           recomendada
           icon={<RiFlashlightFill className="size-5" />}
           titulo="Empezar rápido"
           descripcion="Creamos tu sucursal, almacén y caja con valores por defecto. Empiezas a vender en un minuto."
         />
         <TarjetaEleccion
-          onClick={() => onElegir("manual")}
+          seleccionada={seleccion === "manual"}
+          onSelect={() => setSeleccion("manual")}
+          onConfirm={() => onElegir("manual")}
           icon={<RiSettings3Line className="size-5" />}
           titulo="Configurar a mi manera"
-          descripcion="Nombra tú mismo tu sucursal, almacén y caja."
+          descripcion="Nombra tú mismo tu sucursal, almacén y caja. Ideal si ya tienes tu estructura clara."
         />
       </div>
+
+      <Button
+        type="button"
+        size="lg"
+        className="h-12 w-full rounded-xl text-base font-semibold"
+        disabled={!seleccion}
+        onClick={() => seleccion && onElegir(seleccion)}
+      >
+        Continuar
+        <RiArrowRightLine className="size-4" />
+      </Button>
     </div>
   )
 }
 
 function TarjetaEleccion({
-  onClick,
+  seleccionada,
+  onSelect,
+  onConfirm,
   icon,
   titulo,
   descripcion,
   recomendada,
 }: {
-  onClick: () => void
+  seleccionada: boolean
+  onSelect: () => void
+  onConfirm: () => void
   icon: React.ReactNode
   titulo: string
   descripcion: string
@@ -174,37 +201,50 @@ function TarjetaEleccion({
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={`group relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 ${
-        recomendada
-          ? "border-primary/40 bg-primary/5 ring-1 ring-primary/30"
-          : "bg-card hover:border-border"
+      role="radio"
+      aria-checked={seleccionada}
+      onClick={onSelect}
+      onDoubleClick={onConfirm}
+      className={`group relative flex h-full flex-col gap-3 rounded-2xl border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 ${
+        seleccionada
+          ? "border-primary bg-primary/5 shadow-sm"
+          : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
       }`}
     >
-      {recomendada ? (
-        <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
-          Recomendado
+      <div className="flex items-start justify-between gap-2">
+        <span
+          className={`flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
+            seleccionada
+              ? "bg-primary text-primary-foreground"
+              : "bg-primary/10 text-primary"
+          }`}
+        >
+          {icon}
         </span>
-      ) : null}
-      <span
-        className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
-          recomendada
-            ? "bg-primary text-primary-foreground"
-            : "bg-primary/10 text-primary"
-        }`}
-      >
-        {icon}
-      </span>
+        <span
+          aria-hidden="true"
+          className={`flex size-5 items-center justify-center rounded-full border-2 transition-colors ${
+            seleccionada
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground/30"
+          }`}
+        >
+          {seleccionada ? <RiCheckboxCircleLine className="size-3.5" /> : null}
+        </span>
+      </div>
       <div>
-        <p className="font-semibold">{titulo}</p>
-        <p className="mt-1 text-sm leading-5 text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold">{titulo}</p>
+          {recomendada ? (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+              Recomendado
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
           {descripcion}
         </p>
       </div>
-      <span className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary">
-        Continuar
-        <RiArrowRightLine className="size-4 transition-transform group-hover:translate-x-0.5" />
-      </span>
     </button>
   )
 }
@@ -347,6 +387,18 @@ function FlujoManual({
       }}
       className="flex flex-col gap-6"
     >
+      <div className="flex gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <RiSettings3Line className="size-5" />
+        </span>
+        <div>
+          <h2 className="text-lg font-semibold">Configura tu negocio</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tres pasos rápidos para dejar tu punto de venta listo.
+          </p>
+        </div>
+      </div>
+
       <div>
         <div className="flex items-center gap-2">
           {STEPS.map((label, index) => (
@@ -423,7 +475,7 @@ function DatosNegocio({
   codigoOk,
 }: SectionProps & { codigoOk: boolean }) {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
       <div>
         <h2 className="text-lg font-semibold">Cuéntanos sobre tu negocio</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -495,7 +547,7 @@ function DatosNegocio({
 
 function DatosLocal({ form, set }: SectionProps) {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
       <div className="flex gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <RiStore2Line className="size-5" />
@@ -529,7 +581,7 @@ function DatosLocal({ form, set }: SectionProps) {
 
 function DatosPuntoVenta({ form, set }: SectionProps) {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
       <div className="flex gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
           <RiSafe2Line className="size-5" />
