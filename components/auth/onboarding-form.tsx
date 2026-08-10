@@ -146,7 +146,7 @@ function Eleccion({ onElegir }: { onElegir: (modo: Eleccion) => void }) {
       <div
         role="radiogroup"
         aria-label="Forma de empezar"
-        className="grid gap-3 sm:grid-cols-2"
+        className="grid gap-3"
       >
         <TarjetaEleccion
           seleccionada={seleccion === "rapido"}
@@ -205,35 +205,23 @@ function TarjetaEleccion({
       aria-checked={seleccionada}
       onClick={onSelect}
       onDoubleClick={onConfirm}
-      className={`group relative flex h-full flex-col gap-3 rounded-2xl border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 ${
+      className={`group relative flex items-start gap-4 rounded-2xl border-2 p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 ${
         seleccionada
           ? "border-primary bg-primary/5 shadow-sm"
           : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className={`flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
-            seleccionada
-              ? "bg-primary text-primary-foreground"
-              : "bg-primary/10 text-primary"
-          }`}
-        >
-          {icon}
-        </span>
-        <span
-          aria-hidden="true"
-          className={`flex size-5 items-center justify-center rounded-full border-2 transition-colors ${
-            seleccionada
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-muted-foreground/30"
-          }`}
-        >
-          {seleccionada ? <RiCheckboxCircleLine className="size-3.5" /> : null}
-        </span>
-      </div>
-      <div>
-        <div className="flex items-center gap-2">
+      <span
+        className={`flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
+          seleccionada
+            ? "bg-primary text-primary-foreground"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold">{titulo}</p>
           {recomendada ? (
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
@@ -241,10 +229,20 @@ function TarjetaEleccion({
             </span>
           ) : null}
         </div>
-        <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
+        <p className="mt-1 text-sm leading-5 text-muted-foreground">
           {descripcion}
         </p>
       </div>
+      <span
+        aria-hidden="true"
+        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+          seleccionada
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-muted-foreground/30"
+        }`}
+      >
+        {seleccionada ? <RiCheckboxCircleLine className="size-3.5" /> : null}
+      </span>
     </button>
   )
 }
