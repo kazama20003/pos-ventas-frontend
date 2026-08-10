@@ -227,3 +227,39 @@ export const liberarReserva = (id: string) =>
     `/inventario/reservas/${id}/liberar`,
     { method: "POST" }
   )
+
+export type LoteVencimiento = {
+  loteId: string
+  lotNumber: string
+  venceEn: string
+  diasParaVencer: number
+  vencido: boolean
+  cantidad: string
+  varianteId: string
+  sku: string
+  nombre: string
+  productoNombre: string | null
+  almacenId: string
+  almacenNombre: string
+  sucursalId: string
+  sucursalNombre: string | null
+}
+
+export type RespuestaVencimientos = {
+  total: number
+  vencidos: number
+  porVencer: number
+  diasAviso: number
+  items: LoteVencimiento[]
+}
+
+/** GET /inventario/vencimientos — lotes por vencer o vencidos (control de caducidad). */
+export function listarVencimientos(params?: { dias?: number; almacenId?: string }) {
+  const qs = new URLSearchParams()
+  if (params?.dias) qs.set("dias", String(params.dias))
+  if (params?.almacenId) qs.set("almacenId", params.almacenId)
+  const cola = qs.toString()
+  return authedFetch<RespuestaVencimientos>(
+    `/inventario/vencimientos${cola ? `?${cola}` : ""}`
+  )
+}

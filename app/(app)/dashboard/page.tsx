@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { FirstSaleChecklist } from "@/components/onboarding/first-sale-checklist"
+import { AlertaVencimientos } from "@/components/inventario/alerta-vencimientos"
 
 const stats = [
   {
@@ -60,6 +61,7 @@ export default function DashboardPage() {
       />
        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4 md:p-6">
          <FirstSaleChecklist />
+         <AlertaVencimientos />
          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((s) => (
             <Card key={s.label}>
