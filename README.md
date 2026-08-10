@@ -29,8 +29,17 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy on Cloud Run
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The `Dockerfile` creates a production image using Next.js standalone output. Cloud Run listens on port `8080` automatically.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Install and authenticate the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install), then enable the required services once:
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+pnpm deploy:cloud-run
+```
+
+The command deploys `pos-ventas-frontend` to `pos-ventas-503719` in `us-central1`. It sends the source to Google Cloud Build, installs dependencies with the lockfile, builds the image, and deploys it to Cloud Run without interactive questions. The Google OAuth client ID is set in the Docker build stage because Next.js embeds `NEXT_PUBLIC_*` variables in the client bundle.

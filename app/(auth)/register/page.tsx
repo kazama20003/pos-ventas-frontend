@@ -9,14 +9,14 @@ import { OnboardingForm } from "@/components/auth/onboarding-form"
 export default function RegisterPage() {
   const [idToken, setIdToken] = React.useState<string | null>(null)
 
-  // Paso 2: ya autenticado con Google, crear la empresa.
+  // Paso 2: ya autenticado con Google, configurar el primer punto de venta.
   if (idToken) {
     return (
       <div className="flex flex-col gap-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">Registra tu empresa</h1>
+          <h1 className="text-2xl font-semibold">Configuremos tu negocio</h1>
           <p className="text-sm text-muted-foreground">
-            Completa los datos de tu negocio. Serás el administrador.
+            En tres pasos tendrás tu primer punto de venta listo para operar.
           </p>
         </div>
         <OnboardingForm idToken={idToken} />

@@ -2,7 +2,14 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { RiErrorWarningLine } from "@remixicon/react"
+import {
+  RiArrowLeftLine,
+  RiArrowRightLine,
+  RiCheckboxCircleLine,
+  RiErrorWarningLine,
+  RiSafe2Line,
+  RiStore2Line,
+} from "@remixicon/react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,13 +20,12 @@ import { guardarSesion, guardarPerfilDesdeIdToken } from "@/lib/auth/session"
 import { ApiError } from "@/lib/api/client"
 import { RUC_REGEX, TENANT_CODIGO_REGEX } from "@/lib/api/types"
 
-/**
- * Formulario de creación de empresa (onboarding). Paso posterior a la
- * autenticación con Google: recibe el `idToken` ya obtenido y crea el tenant.
- */
+const STEPS = ["Tu negocio", "Tu local", "Listo para vender"]
+
 export function OnboardingForm({ idToken }: { idToken: string }) {
   const router = useRouter()
   const { refrescarPerfil } = useAuthContext()
+  const [step, setStep] = React.useState(0)
   const [form, setForm] = React.useState({
     tenantNombre: "",
     tenantCodigo: "",
@@ -27,49 +33,110 @@ export function OnboardingForm({ idToken }: { idToken: string }) {
     empresaRazonSocial: "",
     empresaRuc: "",
     adminNombre: "",
+    sucursalNombre: "Sucursal principal",
+    sucursalDireccion: "",
+    almacenNombre: "Almacén principal",
+    cajaNombre: "Caja principal",
   })
   const [error, setError] = React.useState<string | null>(null)
   const [cargando, setCargando] = React.useState(false)
 
-  const set = (k: keyof typeof form) => (v: string) =>
-    setForm((f) => ({ ...f, [k]: v }))
+  const set = (key: keyof typeof form) => (value: string) =>
+    setForm((current) => ({ ...current, [key]: value }))
 
-  const codigoOk = form.tenantCodigo === "" || TENANT_CODIGO_REGEX.test(form.tenantCodigo)
-  const valido =
+  const codigoOk =
+    form.tenantCodigo === "" || TENANT_CODIGO_REGEX.test(form.tenantCodigo)
+  const negocioValido =
     codigoOk &&
     RUC_REGEX.test(form.empresaRuc) &&
-    form.tenantNombre.length >= 2 &&
-    form.organizacionNombre.length >= 2 &&
-    form.empresaRazonSocial.length >= 2
+    form.tenantNombre.trim().length >= 2 &&
+    form.empresaRazonSocial.trim().length >= 2
+  const localValido = form.sucursalNombre.trim().length >= 2
+  const puntoVentaValido =
+    form.almacenNombre.trim().length >= 2 && form.cajaNombre.trim().length >= 2
+  const puedeAvanzar = [negocioValido, localValido, puntoVentaValido][step]
 
-  async function enviar(e: React.FormEvent) {
-    e.preventDefault()
-    if (!valido) return
+  async function finalizar() {
+    if (!puntoVentaValido) return
     setError(null)
     setCargando(true)
     try {
       const res = await registrarEmpresa({
         idToken,
         tenantCodigo: form.tenantCodigo || undefined,
-        tenantNombre: form.tenantNombre,
-        organizacionNombre: form.organizacionNombre,
-        empresaRazonSocial: form.empresaRazonSocial,
+        tenantNombre: form.tenantNombre.trim(),
+        organizacionNombre: form.organizacionNombre.trim() || form.tenantNombre.trim(),
+        empresaRazonSocial: form.empresaRazonSocial.trim(),
         empresaRuc: form.empresaRuc,
-        adminNombre: form.adminNombre || undefined,
+        adminNombre: form.adminNombre.trim() || undefined,
+        configuracionInicial: "RAPIDA",
+        sucursalNombre: form.sucursalNombre.trim(),
+        sucursalDireccion: form.sucursalDireccion.trim() || undefined,
+        almacenNombre: form.almacenNombre.trim(),
+        cajaNombre: form.cajaNombre.trim(),
       })
       guardarPerfilDesdeIdToken(idToken)
       guardarSesion(res.tokens)
       refrescarPerfil()
       router.push("/dashboard")
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo registrar")
+      setError(err instanceof ApiError ? err.message : "No se pudo crear tu cuenta")
     } finally {
       setCargando(false)
     }
   }
 
+  function avanzar() {
+    if (!puedeAvanzar) return
+    setError(null)
+    if (step === STEPS.length - 1) {
+      void finalizar()
+      return
+    }
+    setStep((current) => current + 1)
+  }
+
   return (
-    <form onSubmit={enviar} className="flex flex-col gap-5">
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        avanzar()
+      }}
+      className="flex flex-col gap-6"
+    >
+      <div>
+        <div className="flex items-center gap-2">
+          {STEPS.map((label, index) => (
+            <React.Fragment key={label}>
+              {index > 0 ? (
+                <span className="h-px flex-1 bg-border" aria-hidden="true" />
+              ) : null}
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
+                    index < step
+                      ? "bg-emerald-500 text-white"
+                      : index === step
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {index < step ? <RiCheckboxCircleLine className="size-4" /> : index + 1}
+                </span>
+                <span
+                  className={`hidden text-xs font-medium sm:inline ${
+                    index === step ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">Paso {step + 1} de {STEPS.length}</p>
+      </div>
+
       {error ? (
         <div className="flex items-start gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <RiErrorWarningLine className="mt-0.5 size-4 shrink-0" />
@@ -77,63 +144,57 @@ export function OnboardingForm({ idToken }: { idToken: string }) {
         </div>
       ) : null}
 
-      <div className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="tenantNombre">Nombre del negocio</Label>
-          <Input id="tenantNombre" placeholder="Mi Bodega" value={form.tenantNombre} onChange={(e) => set("tenantNombre")(e.target.value)} />
-        </div>
+      {step === 0 ? <DatosNegocio form={form} set={set} codigoOk={codigoOk} /> : null}
+      {step === 1 ? <DatosLocal form={form} set={set} /> : null}
+      {step === 2 ? <DatosPuntoVenta form={form} set={set} /> : null}
 
-        <div className="grid gap-2">
-          <Label htmlFor="tenantCodigo">
-            Código de empresa <span className="text-muted-foreground">(opcional)</span>
-          </Label>
-          <Input
-            id="tenantCodigo"
-            placeholder="se genera automáticamente"
-            value={form.tenantCodigo}
-            onChange={(e) => set("tenantCodigo")(e.target.value.trim())}
-            aria-invalid={form.tenantCodigo.length > 0 && !TENANT_CODIGO_REGEX.test(form.tenantCodigo)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Si lo dejas vacío, lo generamos a partir del nombre. Se usa para iniciar sesión.
-          </p>
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="organizacionNombre">Organización</Label>
-          <Input id="organizacionNombre" placeholder="Mi Bodega S.A.C." value={form.organizacionNombre} onChange={(e) => set("organizacionNombre")(e.target.value)} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-2">
-            <Label htmlFor="empresaRazonSocial">Razón social</Label>
-            <Input id="empresaRazonSocial" placeholder="Mi Bodega S.A.C." value={form.empresaRazonSocial} onChange={(e) => set("empresaRazonSocial")(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="empresaRuc">RUC</Label>
-            <Input
-              id="empresaRuc"
-              placeholder="20123456789"
-              inputMode="numeric"
-              maxLength={11}
-              value={form.empresaRuc}
-              onChange={(e) => set("empresaRuc")(e.target.value.replace(/\D/g, ""))}
-              aria-invalid={form.empresaRuc.length > 0 && !RUC_REGEX.test(form.empresaRuc)}
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="adminNombre">
-            Tu nombre <span className="text-muted-foreground">(opcional)</span>
-          </Label>
-          <Input id="adminNombre" placeholder="Tu nombre y apellido" value={form.adminNombre} onChange={(e) => set("adminNombre")(e.target.value)} />
-        </div>
+      <div className="flex items-center justify-between gap-3 border-t pt-5">
+        {step > 0 ? (
+          <Button type="button" variant="ghost" onClick={() => setStep((current) => current - 1)} disabled={cargando}>
+            <RiArrowLeftLine /> Atrás
+          </Button>
+        ) : <span />}
+        <Button type="submit" disabled={!puedeAvanzar || cargando}>
+          {cargando ? "Preparando tu espacio…" : step === STEPS.length - 1 ? "Crear mi espacio" : <>Continuar <RiArrowRightLine /></>}
+        </Button>
       </div>
-
-      <Button type="submit" size="lg" className="w-full" disabled={!valido || cargando}>
-        {cargando ? "Creando empresa…" : "Crear empresa"}
-      </Button>
     </form>
   )
+}
+
+type Form = {
+  tenantNombre: string
+  tenantCodigo: string
+  organizacionNombre: string
+  empresaRazonSocial: string
+  empresaRuc: string
+  adminNombre: string
+  sucursalNombre: string
+  sucursalDireccion: string
+  almacenNombre: string
+  cajaNombre: string
+}
+type SectionProps = { form: Form; set: (key: keyof Form) => (value: string) => void }
+
+function DatosNegocio({ form, set, codigoOk }: SectionProps & { codigoOk: boolean }) {
+  return <div className="grid gap-4">
+    <div><h2 className="text-lg font-semibold">Cuéntanos sobre tu negocio</h2><p className="mt-1 text-sm text-muted-foreground">Estos datos identifican tu empresa y su administrador.</p></div>
+    <Campo label="Nombre del negocio" htmlFor="tenantNombre"><Input id="tenantNombre" placeholder="Mi Bodega" value={form.tenantNombre} onChange={(e) => set("tenantNombre")(e.target.value)} autoFocus /></Campo>
+    <Campo label="Razón social" htmlFor="empresaRazonSocial"><Input id="empresaRazonSocial" placeholder="Mi Bodega S.A.C." value={form.empresaRazonSocial} onChange={(e) => set("empresaRazonSocial")(e.target.value)} /></Campo>
+    <Campo label="RUC" htmlFor="empresaRuc"><Input id="empresaRuc" placeholder="20123456789" inputMode="numeric" maxLength={11} value={form.empresaRuc} onChange={(e) => set("empresaRuc")(e.target.value.replace(/\D/g, ""))} /></Campo>
+    <Campo label="Tu nombre" htmlFor="adminNombre" optional><Input id="adminNombre" placeholder="Tu nombre y apellido" value={form.adminNombre} onChange={(e) => set("adminNombre")(e.target.value)} /></Campo>
+    <details className="rounded-xl border px-3 py-2"><summary className="cursor-pointer text-sm font-medium">Opciones avanzadas</summary><div className="mt-3 grid gap-3"><Campo label="Organización" htmlFor="organizacionNombre"><Input id="organizacionNombre" placeholder="Mi Bodega S.A.C." value={form.organizacionNombre} onChange={(e) => set("organizacionNombre")(e.target.value)} /></Campo><Campo label="Código de empresa" htmlFor="tenantCodigo" optional><Input id="tenantCodigo" placeholder="se genera automáticamente" value={form.tenantCodigo} aria-invalid={!codigoOk} onChange={(e) => set("tenantCodigo")(e.target.value.trim())} /></Campo></div></details>
+  </div>
+}
+
+function DatosLocal({ form, set }: SectionProps) {
+  return <div className="grid gap-4"><div className="flex gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><RiStore2Line className="size-5" /></span><div><h2 className="text-lg font-semibold">¿Dónde venderás?</h2><p className="mt-1 text-sm text-muted-foreground">Crea tu primera sucursal. Después podrás añadir más locales.</p></div></div><Campo label="Nombre de la sucursal" htmlFor="sucursalNombre"><Input id="sucursalNombre" value={form.sucursalNombre} onChange={(e) => set("sucursalNombre")(e.target.value)} autoFocus /></Campo><Campo label="Dirección" htmlFor="sucursalDireccion" optional><Input id="sucursalDireccion" placeholder="Av. Principal 123" value={form.sucursalDireccion} onChange={(e) => set("sucursalDireccion")(e.target.value)} /></Campo></div>
+}
+
+function DatosPuntoVenta({ form, set }: SectionProps) {
+  return <div className="grid gap-4"><div className="flex gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600"><RiSafe2Line className="size-5" /></span><div><h2 className="text-lg font-semibold">Prepara tu punto de venta</h2><p className="mt-1 text-sm text-muted-foreground">Usaremos estos nombres para controlar tu stock y cobrar.</p></div></div><Campo label="Nombre del almacén" htmlFor="almacenNombre"><Input id="almacenNombre" value={form.almacenNombre} onChange={(e) => set("almacenNombre")(e.target.value)} autoFocus /></Campo><Campo label="Nombre de la caja" htmlFor="cajaNombre"><Input id="cajaNombre" value={form.cajaNombre} onChange={(e) => set("cajaNombre")(e.target.value)} /></Campo><p className="rounded-xl bg-muted px-3 py-2.5 text-xs leading-5 text-muted-foreground">Crearemos la sucursal, el almacén y la caja en una sola operación. Solo faltará agregar un producto y abrir caja para vender.</p></div>
+}
+
+function Campo({ label, htmlFor, optional, children }: { label: string; htmlFor: string; optional?: boolean; children: React.ReactNode }) {
+  return <div className="grid gap-2"><Label htmlFor={htmlFor}>{label}{optional ? <span className="text-muted-foreground"> (opcional)</span> : null}</Label>{children}</div>
 }

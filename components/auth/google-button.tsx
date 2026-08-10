@@ -12,6 +12,7 @@ type InitConfig = {
   callback: (res: CredentialResponse) => void
   login_hint?: string
   use_fedcm_for_prompt?: boolean
+  use_fedcm_for_button?: boolean
 }
 
 type GsiButtonConfig = {
@@ -79,7 +80,8 @@ export function useGooglePrompt(onCredential: (idToken: string) => void) {
         if (res.credential) cbRef.current(res.credential)
       },
       login_hint,
-      use_fedcm_for_prompt: true,
+      use_fedcm_for_prompt: false,
+      use_fedcm_for_button: false,
     })
     hintRef.current = login_hint
   }, [])
@@ -146,7 +148,8 @@ export function GoogleButton({
           callback: (res) => {
             if (res.credential) cbRef.current(res.credential)
           },
-          use_fedcm_for_prompt: true,
+          use_fedcm_for_prompt: false,
+          use_fedcm_for_button: false,
         })
         contenedor.current.innerHTML = ""
         window.google.accounts.id.renderButton(contenedor.current, {

@@ -64,6 +64,12 @@ export interface RegistrarEmpresaDto {
   /** RUC peruano: 11 dígitos. */
   empresaRuc: string
   adminNombre?: string
+  /** La configuración guiada crea la primera operación dentro de la transacción. */
+  configuracionInicial?: "RAPIDA" | "MANUAL"
+  sucursalNombre?: string
+  sucursalDireccion?: string
+  almacenNombre?: string
+  cajaNombre?: string
 }
 
 export interface RegistrarEmpresaResponse {
