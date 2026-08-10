@@ -50,6 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    // Hay sesión: mientras validamos /perfil el estado es "cargando", NO el
+    // valor previo. Si no, tras registrarse/loguear el guard ve "anonimo" y
+    // redirige a /login antes de que /perfil resuelva (rebote al login).
+    setStatus("cargando")
+
     let vivo = true
     authedFetch<UsuarioAutenticado>("/identidad/auth/perfil")
       .then((u) => {
