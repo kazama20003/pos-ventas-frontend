@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 
 import { GoogleButton } from "@/components/auth/google-button"
-import { OnboardingForm } from "@/components/auth/onboarding-form"
+import { OnboardingFlow } from "@/components/auth/onboarding-form"
 
 export default function RegisterPage() {
   const [idToken, setIdToken] = React.useState<string | null>(null)
@@ -16,10 +16,10 @@ export default function RegisterPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Configuremos tu negocio</h1>
           <p className="text-sm text-muted-foreground">
-            En tres pasos tendrás tu primer punto de venta listo para operar.
+            Elige cómo empezar y en un momento tendrás tu punto de venta listo.
           </p>
         </div>
-        <OnboardingForm idToken={idToken} />
+        <OnboardingFlow idToken={idToken} />
       </div>
     )
   }

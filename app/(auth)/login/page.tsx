@@ -13,7 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { GoogleButton, useGooglePrompt } from "@/components/auth/google-button"
-import { OnboardingForm } from "@/components/auth/onboarding-form"
+import { OnboardingFlow } from "@/components/auth/onboarding-form"
 import { useAuthContext } from "@/components/auth/auth-provider"
 import { loginGoogle } from "@/lib/api/auth"
 import { guardarSesion, guardarPerfilDesdeIdToken } from "@/lib/auth/session"
@@ -74,7 +74,7 @@ export default function LoginPage() {
             Tu cuenta aún no pertenece a ninguna empresa. Crea una para empezar.
           </p>
         </div>
-        <OnboardingForm idToken={vista.idToken} />
+        <OnboardingFlow idToken={vista.idToken} />
         <VolverInicio onClick={() => setVista({ tipo: "inicio" })} />
       </div>
     )
