@@ -83,6 +83,22 @@ export function ContextualTour({
         return
       }
       clearInterval(timer)
+      // Si el usuario ya está escribiendo en el formulario (llegó por su
+      // cuenta y empezó a llenarlo), no lo interrumpimos con el tour — salvo
+      // que haya venido explícitamente desde la guía (forzado).
+      if (!forzado) {
+        const activo = document.activeElement
+        const escribiendo =
+          (activo instanceof HTMLInputElement && activo.value.length > 0) ||
+          (activo instanceof HTMLTextAreaElement && activo.value.length > 0)
+        const primerCampo = document.querySelector(visibles[0].selector)
+        const campoConTexto =
+          (primerCampo instanceof HTMLInputElement &&
+            primerCampo.value.length > 0) ||
+          (primerCampo instanceof HTMLTextAreaElement &&
+            primerCampo.value.length > 0)
+        if (escribiendo || campoConTexto) return
+      }
       try {
         sessionStorage.setItem(flag, "1")
         if (forzado) sessionStorage.removeItem("guide-intent")

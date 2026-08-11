@@ -58,6 +58,9 @@ export function OnboardingGuide() {
 
   const [abierto, setAbierto] = React.useState(false)
   const [celebracion, setCelebracion] = React.useState<Celebracion | null>(null)
+  // Confirmaciones de omitir: que saltarse un paso (o toda la guía) sea una
+  // decisión explícita, no un click accidental.
+  const [confirmar, setConfirmar] = React.useState<"paso" | "todo" | null>(null)
 
   // Al cambiar de ruta, revalida el estado (el usuario pudo completar algo).
   React.useEffect(() => {
@@ -118,6 +121,7 @@ export function OnboardingGuide() {
   const irAlPaso = (paso: PasoActivo) => {
     marcarGuideIntent(paso.flowKey, paso.stepKey)
     setCelebracion(null)
+    setConfirmar(null)
     setAbierto(false)
     // La vista del backend manda: es dinámica según el tipo de negocio
     // (p. ej. "vender" lleva al salón si el tenant es restaurante).
@@ -129,6 +133,7 @@ export function OnboardingGuide() {
       if (!f.completado && !f.descartado) descartarFlujo(f.flowKey)
     }
     setCelebracion(null)
+    setConfirmar(null)
     setAbierto(false)
   }
 
@@ -297,22 +302,51 @@ export function OnboardingGuide() {
                     ) : null}
                   </div>
                 </div>
-                <div className="mt-3 flex items-center gap-3">
-                  <Button size="sm" onClick={() => irAlPaso(pasoActivo)}>
-                    {celebracion ? "Continuar" : "Hacerlo ahora"}
-                    <RiArrowRightLine data-icon="inline-end" />
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      omitirPaso(pasoActivo.flowKey, pasoActivo.stepKey)
-                    }
-                    disabled={mutando}
-                    className="text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-50"
-                  >
-                    Omitir
-                  </button>
-                </div>
+                {confirmar === "paso" ? (
+                  // Omitir con confirmación: que sea una decisión, no un
+                  // click accidental a mitad de formulario.
+                  <div className="mt-3 rounded-lg bg-muted/60 p-2.5">
+                    <p className="text-xs text-muted-foreground">
+                      ¿Saltar este paso sin hacerlo? Podrás retomarlo cuando
+                      quieras desde esta guía.
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={mutando}
+                        onClick={() => {
+                          omitirPaso(pasoActivo.flowKey, pasoActivo.stepKey)
+                          setConfirmar(null)
+                        }}
+                      >
+                        Sí, omitir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setConfirmar(null)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-3">
+                    <Button size="sm" onClick={() => irAlPaso(pasoActivo)}>
+                      {celebracion ? "Continuar" : "Hacerlo ahora"}
+                      <RiArrowRightLine data-icon="inline-end" />
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmar("paso")}
+                      disabled={mutando}
+                      className="text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-50"
+                    >
+                      Omitir
+                    </button>
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -344,6 +378,41 @@ export function OnboardingGuide() {
                 })}
               </div>
             ) : null}
+
+            {/* Salida para quien ya conoce el sistema */}
+            {confirmar === "todo" ? (
+              <div className="mt-3 rounded-lg bg-muted/60 p-2.5">
+                <p className="text-xs text-muted-foreground">
+                  Se ocultará toda la guía. Podrás operar libremente; los
+                  pasos igual se marcan solos al hacerlos.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={mutando}
+                    onClick={terminar}
+                  >
+                    Omitir toda la guía
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmar(null)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmar("todo")}
+                className="mt-3 w-full text-center text-[11px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+              >
+                Ya sé cómo funciona · omitir toda la guía
+              </button>
+            )}
           </>
         )}
       </div>
