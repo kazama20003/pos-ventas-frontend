@@ -84,6 +84,7 @@ export const RUC_REGEX = /^\d{11}$/
 
 export type PasoOnboarding =
   | "producto"
+  | "proveedor"
   | "stock"
   | "caja"
   | "venta"
@@ -96,6 +97,7 @@ export interface EstadoOnboarding {
   pasos: {
     productoCreado: boolean
     necesitaStock: boolean
+    proveedorRegistrado: boolean
     stockListo: boolean
     cajaAbierta: boolean
     primeraVenta: boolean

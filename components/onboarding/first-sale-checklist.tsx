@@ -35,10 +35,17 @@ const FOCOS: Record<FocoPaso, Foco> = {
     cta: "Crear producto",
     href: "/productos/nuevo",
   },
+  proveedor: {
+    icon: RiTruckLine,
+    titulo: "Registra a tu proveedor",
+    sub: "A quién le compras la mercadería; lo necesitas para ingresar stock.",
+    cta: "Registrar proveedor",
+    href: "/proveedores",
+  },
   stock: {
     icon: RiTruckLine,
     titulo: "Dale stock a tu producto",
-    sub: "Registra a tu proveedor y una compra para tener inventario.",
+    sub: "Registra una compra a tu proveedor para tener inventario.",
     cta: "Registrar compra",
     href: "/compras",
   },
@@ -58,7 +65,10 @@ const FOCOS: Record<FocoPaso, Foco> = {
   },
 }
 
-const ORDEN_BASE: FocoPaso[] = ["producto", "stock", "caja", "venta"]
+const ORDEN_BASE: FocoPaso[] = ["producto", "proveedor", "stock", "caja", "venta"]
+
+/** Pasos que solo aplican cuando el negocio vende producto físico. */
+const PASOS_FISICOS: FocoPaso[] = ["proveedor", "stock"]
 
 export function FirstSaleChecklist() {
   const queryClient = useQueryClient()
@@ -110,10 +120,10 @@ export function FirstSaleChecklist() {
     )
   }
 
-  // Orden de segmentos: excluye "stock" cuando no se necesita (servicios).
+  // Orden de segmentos: excluye proveedor/stock cuando no se necesitan (servicios).
   const orden = data.pasos.necesitaStock
     ? ORDEN_BASE
-    : ORDEN_BASE.filter((p) => p !== "stock")
+    : ORDEN_BASE.filter((p) => !PASOS_FISICOS.includes(p))
 
   const pasoActual = data.pasoActual as FocoPaso
   const foco = FOCOS[pasoActual]
