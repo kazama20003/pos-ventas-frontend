@@ -65,6 +65,23 @@ export function OnboardingGuide() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
 
+  // Bienvenida: la primera vez que el usuario aterriza en el dashboard con
+  // pasos pendientes (recién registrado), la guía se presenta sola en vez de
+  // quedar como un botón flotante que pasa desapercibido. Solo una vez.
+  const [bienvenida, setBienvenida] = React.useState(false)
+  React.useEffect(() => {
+    if (
+      pathname === "/dashboard" &&
+      pasoActivo &&
+      typeof window !== "undefined" &&
+      !localStorage.getItem("gekko.guide.welcomed")
+    ) {
+      localStorage.setItem("gekko.guide.welcomed", "1")
+      setBienvenida(true)
+      setAbierto(true)
+    }
+  }, [pathname, pasoActivo])
+
   // Continuidad: detecta que el paso que estaba activo pasó a COMPLETADO.
   const prevRef = React.useRef<{ key: string; titulo: string } | null>(null)
   React.useEffect(() => {
@@ -238,6 +255,18 @@ export function OnboardingGuide() {
           </div>
         ) : (
           <>
+            {/* Bienvenida: primera llegada al dashboard tras registrarse */}
+            {bienvenida && !celebracion ? (
+              <div className="mb-3 rounded-xl bg-primary/10 p-3">
+                <p className="text-sm font-semibold text-primary">
+                  ¡Tu espacio está listo! 🎉
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Te guiamos paso a paso hasta tu primera venta. Empieza aquí:
+                </p>
+              </div>
+            ) : null}
+
             {/* Celebración de paso completado */}
             {celebracion?.tipo === "paso" ? (
               <div className="mb-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 p-3 text-emerald-600 dark:text-emerald-400">
