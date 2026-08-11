@@ -1,5 +1,5 @@
-import { HagemLanding } from "@/components/marketing/hagem-landing"
+import { RamosLanding } from "@/components/marketing/ramos-landing"
 
 export default function LandingPage() {
-  return <HagemLanding />
+  return <RamosLanding />
 }
