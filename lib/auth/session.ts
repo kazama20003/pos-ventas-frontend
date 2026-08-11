@@ -13,6 +13,19 @@ export type PerfilCache = {
 export function guardarSesion(tokens: TokensEmitidos) {
   if (typeof window === "undefined") return
   localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens))
+  // Nuevo inicio de sesión = guiado fresco: la bienvenida y los coach-marks
+  // deben volver a presentarse para esta cuenta (los flags viven en el
+  // navegador, no en el usuario).
+  try {
+    sessionStorage.removeItem("gekko.guide.welcomed")
+    sessionStorage.removeItem("guide-intent")
+    for (const k of Object.keys(sessionStorage)) {
+      if (k.startsWith("tour:")) sessionStorage.removeItem(k)
+    }
+    localStorage.removeItem("gekko.guide.welcomed")
+  } catch {
+    /* sin storage */
+  }
 }
 
 export function leerSesion(): TokensEmitidos | null {

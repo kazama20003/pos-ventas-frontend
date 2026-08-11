@@ -74,9 +74,9 @@ export function OnboardingGuide() {
       pathname === "/dashboard" &&
       pasoActivo &&
       typeof window !== "undefined" &&
-      !localStorage.getItem("gekko.guide.welcomed")
+      !sessionStorage.getItem("gekko.guide.welcomed")
     ) {
-      localStorage.setItem("gekko.guide.welcomed", "1")
+      sessionStorage.setItem("gekko.guide.welcomed", "1")
       setBienvenida(true)
       setAbierto(true)
     }
