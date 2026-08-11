@@ -51,6 +51,15 @@ const UNIDADES_COMUNES = [
   { codigo: "DOC", nombre: "Docena", symbol: "doc", sunatCode: "DZN" },
 ] as const
 
+// Unidad implícita para servicios (SUNAT ZZ). No se pregunta al usuario:
+// un corte de cabello no se vende "por kilo"; se resuelve/crea sola.
+const UNIDAD_SERVICIO = {
+  codigo: "ZZ",
+  nombre: "Servicio",
+  symbol: "serv",
+  sunatCode: "ZZ",
+} as const
+
 const TIPOS: {
   value: TipoProducto
   titulo: string
@@ -229,8 +238,12 @@ export default function NuevoProductoPage() {
 
   const guardar = useMutation({
     mutationFn: async () => {
-      const preset = UNIDADES_COMUNES.find((u) => u.codigo === unidadCodigo)
-      let unidadId = unidades.data?.find((u) => u.codigo === unidadCodigo)?.id
+      // Servicios: unidad implícita ZZ, sin preguntar en la vista.
+      const codigoUnidad = esServicio ? UNIDAD_SERVICIO.codigo : unidadCodigo
+      const preset = esServicio
+        ? UNIDAD_SERVICIO
+        : UNIDADES_COMUNES.find((u) => u.codigo === unidadCodigo)
+      let unidadId = unidades.data?.find((u) => u.codigo === codigoUnidad)?.id
       if (!unidadId && preset) {
         const creada = await crearUnidad({
           codigo: preset.codigo,
@@ -472,16 +485,18 @@ export default function NuevoProductoPage() {
                         className="h-11 text-base"
                       />
                     </Campo>
-                    <Campo label="Unidad">
-                      <Select
-                        value={unidadCodigo}
-                        onChange={setUnidadCodigo}
-                        options={UNIDADES_COMUNES.map((u) => ({
-                          value: u.codigo,
-                          label: `${u.nombre} (${u.symbol})`,
-                        }))}
-                      />
-                    </Campo>
+                    {!esServicio ? (
+                      <Campo label="Unidad">
+                        <Select
+                          value={unidadCodigo}
+                          onChange={setUnidadCodigo}
+                          options={UNIDADES_COMUNES.map((u) => ({
+                            value: u.codigo,
+                            label: `${u.nombre} (${u.symbol})`,
+                          }))}
+                        />
+                      </Campo>
+                    ) : null}
                   </div>
 
                   {!esServicio ? (
