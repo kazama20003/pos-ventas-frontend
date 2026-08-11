@@ -177,7 +177,7 @@ export function RamosLanding() {
         <div id="explorar" className="relative mt-14 lg:mt-[72px] lg:min-h-[560px]">
           {/* Tarjeta dashboard flotante */}
           <div
-            className="relative z-[2] mx-auto mt-10 w-full max-w-[470px] lg:absolute lg:right-0 lg:top-1 lg:mt-0"
+            className="relative z-[2] mx-auto mt-10 w-full max-w-[470px] lg:absolute lg:right-0 lg:top-0 lg:mt-0 lg:w-[440px]"
             style={{
               animation: "rz-card-in 1s cubic-bezier(0.16, 0.8, 0.3, 1) 2.5s both",
             }}
@@ -295,10 +295,8 @@ export function RamosLanding() {
           </div>
 
           {/* Titular gigante */}
-          {/* Las dos primeras líneas reservan el ancho de la tarjeta flotante
-              (470px + margen) para que las letras nunca queden tapadas. */}
-          <h1 className="text-[clamp(44px,7.6vw,112px)] font-medium leading-none tracking-[-0.035em]">
-            <span className="flex items-center gap-[0.15em] lg:pl-24 lg:pr-[510px]">
+          <h1 className="text-[clamp(44px,8.2vw,118px)] font-medium leading-none tracking-[-0.035em]">
+            <span className="flex items-center gap-[0.15em] lg:pl-24">
               <span className="flex shrink-0" aria-hidden>
                 <span className="grid size-[0.82em] place-items-center rounded-full bg-[#f1f0ee]">
                   <svg width="38%" height="38%" viewBox="0 0 24 24" fill="none">
@@ -328,7 +326,7 @@ export function RamosLanding() {
                 Ventas
               </span>
             </span>
-            <span className="mt-4 flex flex-wrap gap-x-[0.24em] lg:mt-8 lg:pl-6 lg:pr-[510px]">
+            <span className="mt-4 flex gap-[0.24em] lg:mt-8 lg:pl-6 lg:pr-[440px]">
               <span className="rz-word" style={{ animationDelay: "1.9s" }}>
                 que
               </span>
@@ -339,7 +337,7 @@ export function RamosLanding() {
                 tu
               </span>
             </span>
-            <span className="mt-4 flex items-center gap-[0.2em] lg:mt-16 lg:justify-end lg:pr-2">
+            <span className="mt-4 flex items-center gap-[0.2em] lg:mt-11 lg:justify-end">
               <span className="rz-word" style={{ animationDelay: "2.35s" }}>
                 negocio
               </span>
