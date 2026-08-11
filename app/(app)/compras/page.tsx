@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   RiAddLine,
@@ -430,6 +431,28 @@ function Recepcion({ sucursalId }: { sucursalId: string }) {
           <RiCheckLine className="size-4 shrink-0" />
           Recepción {m.data.number} contabilizada · {sol(m.data.total)}. Stock
           actualizado.
+        </div>
+      ) : null}
+
+      {/* Sin proveedores no se puede recepcionar: guiar a registrarlo antes
+          de que el usuario choque con un select vacío. */}
+      {!proveedores.isLoading && proveedoresActivos.length === 0 ? (
+        <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-2 text-sm">
+            <RiInformationLine className="mt-0.5 size-4 shrink-0 text-amber-600" />
+            <span>
+              Aún no tienes proveedores. Regístralo primero para poder
+              ingresar mercadería.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            render={<Link href="/proveedores" />}
+          >
+            Registrar proveedor
+          </Button>
         </div>
       ) : null}
 

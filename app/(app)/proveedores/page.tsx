@@ -12,6 +12,7 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -95,12 +96,24 @@ export default function ProveedoresPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="primera-venta"
+        stepKey="proveedor"
+        selector="#btn-nuevo-proveedor"
+        titulo="Registra a tu proveedor"
+        descripcion="A quién le compras la mercadería. Solo necesitas su nombre."
+      />
       <PageHeader
         title="Proveedores"
         description="Directorio de proveedores y condiciones de pago."
         actions={
           puedeCrear ? (
-            <Button type="button" size="sm" onClick={abrirCrear}>
+            <Button
+              id="btn-nuevo-proveedor"
+              type="button"
+              size="sm"
+              onClick={abrirCrear}
+            >
               <RiAddLine />
               Nuevo proveedor
             </Button>

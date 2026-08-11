@@ -79,8 +79,16 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
   "primera-venta": {
     titulo: "Tu primera venta",
     pasos: {
-      // Solo aparece si el negocio vende producto físico (el backend arma el
-      // flujo según el tipo de negocio; servicios no pasan por aquí).
+      // Solo aparecen si el negocio vende producto físico (el backend arma
+      // el flujo según el tipo de negocio; servicios no pasan por aquí).
+      proveedor: {
+        titulo: "Registra a tu proveedor",
+        descripcion: "A quién le compras la mercadería; se usa al ingresar stock.",
+        cta: "Registrar proveedor",
+        icono: RiCommunityLine,
+        vista: "/proveedores",
+        tourSelector: "#btn-nuevo-proveedor",
+      },
       stock: {
         titulo: "Dale stock a tu producto",
         descripcion: "Registra a tu proveedor y una compra para tener inventario.",
