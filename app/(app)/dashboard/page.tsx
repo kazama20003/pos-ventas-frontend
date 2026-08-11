@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { FirstSaleChecklist } from "@/components/onboarding/first-sale-checklist"
+import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist"
 import { AlertaVencimientos } from "@/components/inventario/alerta-vencimientos"
 
 const stats = [
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         actions={<Button size="sm">Nueva venta</Button>}
       />
        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4 md:p-6">
-         <FirstSaleChecklist />
+         <OnboardingChecklist />
          <AlertaVencimientos />
          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((s) => (

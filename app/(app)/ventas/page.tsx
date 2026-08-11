@@ -22,6 +22,7 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -185,6 +186,13 @@ export default function VentasPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="primera-venta"
+        stepKey="vender"
+        selector="#panel-venta"
+        titulo="Haz tu primera venta"
+        descripcion="Agrega productos y cobra."
+      />
       <PageHeader
         title="Punto de venta"
         description={sucursal ? `Vendiendo · ${sucursal.nombre}` : "Nueva venta"}
@@ -200,7 +208,7 @@ export default function VentasPage() {
             />
           </div>
         ) : (
-          <div className="grid h-full gap-0 lg:grid-cols-[1fr_380px]">
+          <div id="panel-venta" className="grid h-full gap-0 lg:grid-cols-[1fr_380px]">
             {/* Panel izquierdo: catálogo + carrito */}
             <div className="flex min-h-0 flex-col gap-4 overflow-auto p-5 md:p-6">
               {ctx.data && !ctx.data.tienePrecios ? (

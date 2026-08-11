@@ -15,6 +15,8 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
+import { EmptyStateAction } from "@/components/onboarding/empty-state-action"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -95,6 +97,13 @@ export default function ProductosPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="puesta-en-marcha"
+        stepKey="producto"
+        selector="#btn-nuevo-producto"
+        titulo="Crea tu primer producto"
+        descripcion="Desde aquí registras lo que vendes, con precio y código."
+      />
       <PageHeader
         title="Productos"
         description="Todo lo que vendes, en un solo lugar"
@@ -104,7 +113,11 @@ export default function ProductosPage() {
               <RiUploadCloud2Line />
               Importar
             </Button>
-            <Button size="sm" render={<Link href="/productos/nuevo" />}>
+            <Button
+              id="btn-nuevo-producto"
+              size="sm"
+              render={<Link href="/productos/nuevo" />}
+            >
               <RiAddLine />
               Nuevo producto
             </Button>
@@ -203,27 +216,27 @@ export default function ProductosPage() {
               No se pudieron cargar los productos: {(error as Error).message}
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed py-16 text-center">
-              <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <RiPriceTag3Line className="size-7" />
-              </span>
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold">
-                  {hayFiltros ? "Sin resultados" : "Aún no tienes productos"}
-                </h2>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  {hayFiltros
-                    ? "Prueba con otros filtros o limpia la búsqueda."
-                    : "Agrega tu primer producto para empezar a vender."}
-                </p>
+            hayFiltros ? (
+              <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed py-16 text-center">
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <RiPriceTag3Line className="size-7" />
+                </span>
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold">Sin resultados</h2>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Prueba con otros filtros o limpia la búsqueda.
+                  </p>
+                </div>
               </div>
-              {!hayFiltros ? (
-                <Button render={<Link href="/productos/nuevo" />}>
-                  <RiAddLine />
-                  Agregar mi primer producto
-                </Button>
-              ) : null}
-            </div>
+            ) : (
+              <EmptyStateAction
+                icono={RiPriceTag3Line}
+                titulo="Aún no tienes productos"
+                descripcion="Crea tu primer producto para empezar a vender."
+                cta="Crear producto"
+                href="/productos/nuevo"
+              />
+            )
           ) : (
             <div
               className={cn(

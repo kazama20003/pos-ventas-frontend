@@ -16,6 +16,7 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -97,6 +98,13 @@ export default function CajaPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="primera-venta"
+        stepKey="abrir-caja"
+        selector="#btn-abrir-caja"
+        titulo="Abre tu caja"
+        descripcion="Inicia el turno con tu fondo para poder cobrar."
+      />
       <PageHeader
         title="Caja"
         description={
@@ -271,6 +279,7 @@ function AbrirCaja({ sucursalId }: { sucursalId: string }) {
 
           <div>
             <Button
+              id="btn-abrir-caja"
               type="button"
               size="lg"
               disabled={!cajaEfectiva || !montoValido || m.isPending}
