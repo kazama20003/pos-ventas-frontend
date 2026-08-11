@@ -120,25 +120,26 @@ export function RamosLanding() {
         </div>
       ) : null}
 
-      <div className="mx-auto w-full max-w-[1440px] px-4 pt-4 sm:px-6">
-        {/* Nav pill oscura */}
+      {/* Nav pill oscura: banda más ancha que el contenido (1600px vs 1440px)
+          y con más altura/tipografía para darle mayor presencia. */}
+      <div className="mx-auto w-full max-w-[1600px] px-4 pt-4 sm:px-6">
         <nav
-          className="flex items-center justify-between rounded-[26px] py-2.5 pl-6 pr-3"
+          className="flex items-center justify-between rounded-[30px] py-4 pl-8 pr-4"
           style={{ background: DARK }}
         >
-          <Link href="/" className="flex items-center gap-2.5 text-white">
-            <LogoAnillos />
-            <span className="text-[22px] font-semibold tracking-[-0.5px]">
+          <Link href="/" className="flex items-center gap-3 text-white">
+            <LogoAnillos size={30} />
+            <span className="text-[26px] font-semibold tracking-[-0.5px]">
               {siteConfig.name.toLowerCase()}
             </span>
           </Link>
-          <div className="hidden items-center gap-0.5 rounded-[18px] bg-[#1f1f1f] p-[5px] lg:flex">
+          <div className="hidden items-center gap-0.5 rounded-[20px] bg-[#1f1f1f] p-1.5 lg:flex">
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
                 className={cn(
-                  "relative rounded-[14px] px-5 py-[11px] text-sm transition-colors",
+                  "relative rounded-2xl px-6 py-3.5 text-base transition-colors",
                   l.activo
                     ? "bg-[#2a2a2a] text-white"
                     : "text-[#e8e8e8] hover:bg-[#2a2a2a] hover:text-white",
@@ -147,7 +148,7 @@ export function RamosLanding() {
                 {l.label}
                 {l.activo ? (
                   <span
-                    className="absolute bottom-[3px] left-1/2 size-[7px] -translate-x-1/2 rounded-full"
+                    className="absolute bottom-1 left-1/2 size-2 -translate-x-1/2 rounded-full"
                     style={{ background: ACCENT }}
                   />
                 ) : null}
@@ -157,19 +158,21 @@ export function RamosLanding() {
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="hidden rounded-[20px] px-5 py-[15px] text-[15px] font-medium text-[#e8e8e8] transition-colors hover:text-white sm:block"
+              className="hidden rounded-[22px] px-6 py-[18px] text-base font-medium text-[#e8e8e8] transition-colors hover:text-white sm:block"
             >
               Ingresar
             </Link>
             <Link
               href="/register"
-              className="rounded-[20px] bg-white px-6 py-[15px] text-[15px] font-medium text-[#111111] transition-colors hover:bg-[#f43a1d] hover:text-white sm:px-[30px]"
+              className="rounded-[22px] bg-white px-7 py-[18px] text-base font-medium text-[#111111] transition-colors hover:bg-[#f43a1d] hover:text-white sm:px-9"
             >
               Crear cuenta
             </Link>
           </div>
         </nav>
+      </div>
 
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6">
         {/* Hero */}
         <div id="explorar" className="relative mt-14 lg:mt-[72px] lg:min-h-[560px]">
           {/* Tarjeta dashboard flotante */}
