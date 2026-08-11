@@ -119,9 +119,23 @@ export default function RestauranteSalonPage() {
       <ContextualTour
         flowKey="primera-venta"
         stepKey="vender"
-        selector="#mapa-mesas"
-        titulo="Haz tu primera venta"
-        descripcion="Toca una mesa libre para abrir la comanda, o vende para llevar."
+        pasos={[
+          {
+            selector: "#btn-nueva-mesa",
+            titulo: "Crea una mesa",
+            descripcion: "Agrega tu primera mesa al salón.",
+          },
+          {
+            selector: "#mapa-mesas",
+            titulo: "Tu salón",
+            descripcion: "Toca una mesa libre para abrir su comanda.",
+          },
+          {
+            selector: "#btn-para-llevar",
+            titulo: "¿Sin mesa?",
+            descripcion: "Vende para llevar directamente desde aquí.",
+          },
+        ]}
       />
       <PageHeader
         title="Salón"
@@ -139,6 +153,7 @@ export default function RestauranteSalonPage() {
               }))}
             />
             <Button
+              id="btn-para-llevar"
               variant="outline"
               size="sm"
               disabled={!sucursalId || abrirComanda.isPending}
@@ -148,6 +163,7 @@ export default function RestauranteSalonPage() {
               Para llevar
             </Button>
             <Button
+              id="btn-nueva-mesa"
               size="sm"
               disabled={!sucursalId}
               onClick={() => setNuevaMesa((v) => !v)}

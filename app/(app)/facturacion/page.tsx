@@ -88,16 +88,30 @@ export default function FacturacionPage() {
       <ContextualTour
         flowKey="primera-venta"
         stepKey="comprobante"
-        selector="#panel-comprobantes"
-        titulo="Emite tu primer comprobante electrónico"
-        descripcion="Crea una serie activa (ej. Boleta B001) y cobra una venta: se enviará a SUNAT."
+        pasos={[
+          {
+            selector: "#btn-nueva-serie",
+            titulo: "Crea una serie",
+            descripcion: "Empieza con una Boleta (ej. B001).",
+          },
+          {
+            selector: "#panel-comprobantes",
+            titulo: "Tus series",
+            descripcion: "Con una serie activa, cada venta se envía a SUNAT.",
+          },
+        ]}
       />
       <PageHeader
         title="Series de comprobante"
         description="Numeración SUNAT para boletas, facturas y notas."
         actions={
           puedeEmitir && empresaId ? (
-            <Button type="button" size="sm" onClick={abrirCrear}>
+            <Button
+              id="btn-nueva-serie"
+              type="button"
+              size="sm"
+              onClick={abrirCrear}
+            >
               <RiAddLine />
               Nueva serie
             </Button>

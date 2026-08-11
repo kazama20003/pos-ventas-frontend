@@ -189,9 +189,23 @@ export default function VentasPage() {
       <ContextualTour
         flowKey="primera-venta"
         stepKey="vender"
-        selector="#panel-venta"
-        titulo="Haz tu primera venta"
-        descripcion="Agrega productos y cobra."
+        pasos={[
+          {
+            selector: "#buscador-productos",
+            titulo: "Busca tu producto",
+            descripcion: "Toca un resultado para agregarlo al carrito.",
+          },
+          {
+            selector: "#panel-cobro",
+            titulo: "Panel de cobro",
+            descripcion: "Elige comprobante y método de pago.",
+          },
+          {
+            selector: "#btn-cobrar",
+            titulo: "Cobra aquí",
+            descripcion: "Confirma el pago y la venta queda registrada.",
+          },
+        ]}
       />
       <PageHeader
         title="Punto de venta"
@@ -311,7 +325,7 @@ function BuscadorProductos({
   }, [busqueda.data])
 
   return (
-    <div>
+    <div id="buscador-productos">
       <div className="relative">
         <RiSearchLine className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -577,7 +591,10 @@ function PanelCobro({
     m.isPending
 
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden border-l bg-muted/30">
+    <aside
+      id="panel-cobro"
+      className="flex min-h-0 flex-col overflow-hidden border-l bg-muted/30"
+    >
       <div className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
         {/* Total */}
         <div>
@@ -742,6 +759,7 @@ function PanelCobro({
       {/* Cobrar */}
       <div className="border-t bg-background/60 p-4">
         <button
+          id="btn-cobrar"
           type="button"
           disabled={bloqueado || cargando}
           onClick={() => m.mutate()}

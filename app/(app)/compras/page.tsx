@@ -89,9 +89,23 @@ export default function ComprasPage() {
       <ContextualTour
         flowKey="primera-venta"
         stepKey="stock"
-        selector="#panel-compras"
-        titulo="Dale stock a tu producto"
-        descripcion="Registra a tu proveedor y una compra para tener inventario."
+        pasos={[
+          {
+            selector: "#campo-proveedor",
+            titulo: "Elige tu proveedor",
+            descripcion: "A quién le compras la mercadería.",
+          },
+          {
+            selector: "#buscador-compra",
+            titulo: "Busca tu producto",
+            descripcion: "Agrégalo con su cantidad y costo.",
+          },
+          {
+            selector: "#btn-recepcionar",
+            titulo: "Ingresa el stock",
+            descripcion: "Al recepcionar, el inventario se actualiza solo.",
+          },
+        ]}
       />
       <PageHeader
         title="Compras"
@@ -136,7 +150,13 @@ export default function ComprasPage() {
 /* Buscador de productos (líneas)                                     */
 /* ------------------------------------------------------------------ */
 
-function BuscadorLinea({ onAgregar }: { onAgregar: (v: VarianteProducto) => void }) {
+function BuscadorLinea({
+  onAgregar,
+  id,
+}: {
+  onAgregar: (v: VarianteProducto) => void
+  id?: string
+}) {
   const [q, setQ] = React.useState("")
   const [debounced, setDebounced] = React.useState("")
   React.useEffect(() => {
@@ -160,7 +180,7 @@ function BuscadorLinea({ onAgregar }: { onAgregar: (v: VarianteProducto) => void
   }, [busqueda.data])
 
   return (
-    <div className="relative">
+    <div id={id} className="relative">
       <RiSearchLine className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={q}
@@ -414,7 +434,7 @@ function Recepcion({ sucursalId }: { sucursalId: string }) {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Campo label="Proveedor">
+        <Campo label="Proveedor" id="campo-proveedor">
           <Select
             value={proveedorId}
             onChange={setProveedorId}
@@ -447,7 +467,7 @@ function Recepcion({ sucursalId }: { sucursalId: string }) {
         </Campo>
       </div>
 
-      <BuscadorLinea onAgregar={L.agregar} />
+      <BuscadorLinea id="buscador-compra" onAgregar={L.agregar} />
       <TablaLineas
         lineas={L.lineas}
         onCantidad={L.setCantidad}
@@ -496,6 +516,7 @@ function Recepcion({ sucursalId }: { sucursalId: string }) {
 
       <div className="flex justify-end">
         <Button
+          id="btn-recepcionar"
           type="button"
           size="lg"
           disabled={bloqueado}
@@ -707,9 +728,17 @@ function NuevaOrden({
 /* Auxiliares                                                         */
 /* ------------------------------------------------------------------ */
 
-function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+function Campo({
+  label,
+  children,
+  id,
+}: {
+  label: string
+  children: React.ReactNode
+  id?: string
+}) {
   return (
-    <div className="grid gap-1.5">
+    <div id={id} className="grid gap-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>

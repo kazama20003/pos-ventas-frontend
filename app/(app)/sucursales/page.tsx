@@ -160,14 +160,14 @@ export default function SucursalesPage() {
         stepKey="sucursal"
         selector="#btn-nueva-sucursal"
         titulo="Crea tu primera sucursal"
-        descripcion="El local desde donde vas a vender."
+        descripcion="Toca aquí y ponle nombre al local desde donde vas a vender."
       />
       <ContextualTour
         flowKey="puesta-en-marcha"
         stepKey="caja"
         selector="#lista-sucursales"
         titulo="Registra una caja"
-        descripcion="Entra a tu sucursal y agrega la caja en la pestaña Cajas."
+        descripcion="Entra a tu sucursal → pestaña Cajas → escribe el nombre y Agregar."
       />
       <PageHeader
         title="Organización"

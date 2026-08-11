@@ -101,9 +101,23 @@ export default function CajaPage() {
       <ContextualTour
         flowKey="primera-venta"
         stepKey="abrir-caja"
-        selector="#btn-abrir-caja"
-        titulo="Abre tu caja"
-        descripcion="Inicia el turno con tu fondo para poder cobrar."
+        pasos={[
+          {
+            selector: "#selector-caja",
+            titulo: "Elige tu caja",
+            descripcion: "Toca la caja donde vas a cobrar.",
+          },
+          {
+            selector: "#campo-fondo-apertura",
+            titulo: "Fondo de apertura",
+            descripcion: "Escribe el efectivo con el que arranca el cajón.",
+          },
+          {
+            selector: "#btn-abrir-caja",
+            titulo: "Abre el turno",
+            descripcion: "Con la caja abierta ya puedes cobrar ventas.",
+          },
+        ]}
       />
       <PageHeader
         title="Caja"
@@ -225,7 +239,10 @@ function AbrirCaja({ sucursalId }: { sucursalId: string }) {
         <div className="flex flex-col gap-5">
           <div className="grid gap-2">
             <Label className="text-xs text-muted-foreground">Caja</Label>
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <div
+              id="selector-caja"
+              className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+            >
               {activas.map((c) => {
                 const on = c.id === cajaEfectiva
                 return (
@@ -262,7 +279,7 @@ function AbrirCaja({ sucursalId }: { sucursalId: string }) {
             </div>
           </div>
 
-          <div className="grid max-w-xs gap-1.5">
+          <div id="campo-fondo-apertura" className="grid max-w-xs gap-1.5">
             <Label className="text-xs text-muted-foreground">
               Fondo de apertura (S/)
             </Label>

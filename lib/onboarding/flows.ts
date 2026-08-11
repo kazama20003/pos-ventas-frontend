@@ -87,7 +87,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Registrar compra",
         icono: RiTruckLine,
         vista: "/compras",
-        tourSelector: "#panel-compras",
+        tourSelector: "#campo-proveedor",
       },
       "abrir-caja": {
         titulo: "Abre tu caja",
@@ -95,7 +95,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Abrir caja",
         icono: RiSafe2Line,
         vista: "/caja",
-        tourSelector: "#btn-abrir-caja",
+        tourSelector: "#selector-caja",
       },
       vender: {
         titulo: "Haz tu primera venta",
@@ -103,7 +103,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Ir a vender",
         icono: RiShoppingCart2Line,
         vista: "/ventas",
-        tourSelector: "#panel-venta",
+        tourSelector: "#buscador-productos",
       },
       comprobante: {
         titulo: "Emite tu primer comprobante electrónico",
@@ -111,7 +111,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Ir a facturación",
         icono: RiBillLine,
         vista: "/facturacion",
-        tourSelector: "#panel-comprobantes",
+        tourSelector: "#btn-nueva-serie",
       },
     },
   },
