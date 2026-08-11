@@ -120,9 +120,9 @@ export function RamosLanding() {
         </div>
       ) : null}
 
-      {/* Nav pill oscura: banda más ancha que el contenido (1600px vs 1440px)
-          y con más altura/tipografía para darle mayor presencia. */}
-      <div className="mx-auto w-full max-w-[1600px] px-4 pt-4 sm:px-6">
+      {/* Nav pill oscura: a todo el ancho de la pantalla (solo margen lateral),
+          más ancha que el contenido de 1440px y con tipografía generosa. */}
+      <div className="w-full px-4 pt-4 sm:px-6">
         <nav
           className="flex items-center justify-between rounded-[30px] py-4 pl-8 pr-4"
           style={{ background: DARK }}
