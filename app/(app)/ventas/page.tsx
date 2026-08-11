@@ -302,7 +302,11 @@ function BuscadorProductos({
   const items = React.useMemo(() => {
     const prods = busqueda.data?.items ?? []
     return prods.flatMap((p) =>
-      (p.variants ?? []).map((v) => ({ producto: p.nombre, variante: v }))
+      (p.variants ?? []).map((v) => ({
+        producto: p.nombre,
+        kind: p.kind,
+        variante: v,
+      }))
     )
   }, [busqueda.data])
 
@@ -330,9 +334,10 @@ function BuscadorProductos({
               Sin resultados para “{debounced}”.
             </p>
           ) : (
-            items.map(({ producto, variante }) => {
+            items.map(({ producto, kind, variante }) => {
               const precio = precioDe(variante, 1)
               const stock = stockDe(variante)
+              const esServicio = kind === "SERVICIO"
               return (
                 <button
                   key={variante.id}
@@ -348,7 +353,8 @@ function BuscadorProductos({
                       : ""}
                   </span>
                   <span className="mt-1 font-mono text-xs text-muted-foreground">
-                    {variante.sku} · stock {stock}
+                    {variante.sku}
+                    {esServicio ? " · servicio" : ` · stock ${stock}`}
                   </span>
                   <span className="mt-2 flex items-center justify-between">
                     <span className="text-base font-semibold tabular-nums">

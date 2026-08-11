@@ -310,7 +310,7 @@ function EditorProducto({ producto: p }: { producto: Producto }) {
             </div>
           </Seccion>
 
-          <VariantesManager producto={p} />
+          <VariantesManager producto={p} kind={tipo} />
 
           {tipo !== "SERVICIO" ? <ProveedoresManager producto={p} /> : null}
 

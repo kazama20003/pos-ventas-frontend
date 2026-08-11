@@ -19,6 +19,7 @@ import {
   agregarBarcode,
   agregarVariante,
   archivarVariante,
+  crearUnidad,
   generarBarcodeInterno,
   listarImpuestos,
   listarUnidades,
@@ -30,6 +31,15 @@ import {
 import { cn } from "@/lib/utils"
 
 
+// Unidad implícita para servicios (SUNAT ZZ). No se pregunta al usuario:
+// se resuelve/crea sola, igual que en productos/nuevo.
+const UNIDAD_SERVICIO = {
+  codigo: "ZZ",
+  nombre: "Servicio",
+  symbol: "serv",
+  sunatCode: "ZZ",
+} as const
+
 const CB_TIPOS: TipoCodigoBarras[] = [
   "INTERNO",
   "EAN13",
@@ -40,8 +50,16 @@ const CB_TIPOS: TipoCodigoBarras[] = [
   "PLU",
 ]
 
-export function VariantesManager({ producto }: { producto: Producto }) {
+export function VariantesManager({
+  producto,
+  kind,
+}: {
+  producto: Producto
+  /** Tipo actual del producto (puede venir del estado de edición de la página). */
+  kind?: Producto["kind"]
+}) {
   const id = producto.id
+  const esServicio = (kind ?? producto.kind) === "SERVICIO"
   const qc = useQueryClient()
   const unidades = useQuery({ queryKey: ["unidades"], queryFn: listarUnidades })
   const impuestos = useQuery({ queryKey: ["impuestos"], queryFn: listarImpuestos })
@@ -86,6 +104,7 @@ export function VariantesManager({ producto }: { producto: Producto }) {
             productoId={id}
             variante={v}
             puedeArchivar={producto.variants.length > 1}
+            esServicio={esServicio}
             unidades={unidades.data ?? []}
             impuestos={impuestos.data ?? []}
             onCambio={invalidar}
@@ -95,6 +114,10 @@ export function VariantesManager({ producto }: { producto: Producto }) {
         {agregando ? (
           <NuevaVariante
             productoId={id}
+            esServicio={esServicio}
+            unidadServicioId={
+              esServicio ? producto.variants[0]?.unidadMedidaId : undefined
+            }
             unidades={unidades.data ?? []}
             onHecho={() => {
               setAgregando(false)
@@ -112,6 +135,7 @@ function VarianteCard({
   productoId,
   variante,
   puedeArchivar,
+  esServicio,
   unidades,
   impuestos,
   onCambio,
@@ -119,6 +143,7 @@ function VarianteCard({
   productoId: string
   variante: VarianteProducto
   puedeArchivar: boolean
+  esServicio: boolean
   unidades: { id: string; nombre: string; symbol: string }[]
   impuestos: { id: string; nombre: string; codigo: string }[]
   onCambio: () => void
@@ -182,17 +207,19 @@ function VarianteCard({
             className="h-9 tabular-nums"
           />
         </div>
-        <div className="grid gap-1.5">
-          <Label className="text-xs text-muted-foreground">Unidad</Label>
-          <Select
-            value={unidadId}
-            onChange={setUnidadId}
-            options={unidades.map((u) => ({
-              value: u.id,
-              label: `${u.nombre} (${u.symbol})`,
-            }))}
-          />
-        </div>
+        {!esServicio ? (
+          <div className="grid gap-1.5">
+            <Label className="text-xs text-muted-foreground">Unidad</Label>
+            <Select
+              value={unidadId}
+              onChange={setUnidadId}
+              options={unidades.map((u) => ({
+                value: u.id,
+                label: `${u.nombre} (${u.symbol})`,
+              }))}
+            />
+          </div>
+        ) : null}
         <div className="grid gap-1.5">
           <Label className="text-xs text-muted-foreground">Impuesto</Label>
           <Select
@@ -359,12 +386,17 @@ function BarcodesVariante({
 
 function NuevaVariante({
   productoId,
+  esServicio,
+  unidadServicioId,
   unidades,
   onHecho,
   onCancelar,
 }: {
   productoId: string
-  unidades: { id: string; nombre: string; symbol: string }[]
+  esServicio: boolean
+  /** Unidad de la variante existente del servicio (si la hay). */
+  unidadServicioId?: string
+  unidades: { id: string; codigo: string; nombre: string; symbol: string }[]
   onHecho: () => void
   onCancelar: () => void
 }) {
@@ -375,13 +407,21 @@ function NuevaVariante({
   const unidadSel = unidadId || unidades[0]?.id || ""
 
   const crear = useMutation({
-    mutationFn: () =>
-      agregarVariante(productoId, {
-        unidadMedidaId: unidadSel,
+    mutationFn: async () => {
+      // Servicios: unidad implícita, sin preguntar en la vista.
+      let unidadMedidaId = esServicio ? unidadServicioId ?? "" : unidadSel
+      if (esServicio && !unidadMedidaId) {
+        unidadMedidaId =
+          unidades.find((u) => u.codigo === UNIDAD_SERVICIO.codigo)?.id ??
+          (await crearUnidad({ ...UNIDAD_SERVICIO })).id
+      }
+      return agregarVariante(productoId, {
+        unidadMedidaId,
         nombre: nombre.trim(),
         precio: precio ? parseFloat(precio) : undefined,
         cost: costo ? parseFloat(costo) : undefined,
-      }),
+      })
+    },
     onSuccess: onHecho,
   })
   const error = crear.error as ApiError | Error | null
@@ -421,17 +461,19 @@ function NuevaVariante({
             className="h-9 tabular-nums"
           />
         </div>
-        <div className="grid gap-1.5">
-          <Label className="text-xs text-muted-foreground">Unidad</Label>
-          <Select
-            value={unidadSel}
-            onChange={setUnidadId}
-            options={unidades.map((u) => ({
-              value: u.id,
-              label: `${u.nombre} (${u.symbol})`,
-            }))}
-          />
-        </div>
+        {!esServicio ? (
+          <div className="grid gap-1.5">
+            <Label className="text-xs text-muted-foreground">Unidad</Label>
+            <Select
+              value={unidadSel}
+              onChange={setUnidadId}
+              options={unidades.map((u) => ({
+                value: u.id,
+                label: `${u.nombre} (${u.symbol})`,
+              }))}
+            />
+          </div>
+        ) : null}
       </div>
       {error ? <p className="mt-2 text-xs text-destructive">{error.message}</p> : null}
       <div className="mt-3 flex justify-end gap-2">
@@ -441,7 +483,7 @@ function NuevaVariante({
         <Button
           type="button"
           size="sm"
-          disabled={!nombre.trim() || !unidadSel || crear.isPending}
+          disabled={!nombre.trim() || (!esServicio && !unidadSel) || crear.isPending}
           onClick={() => crear.mutate()}
         >
           {crear.isPending ? "Creando…" : "Crear variante"}

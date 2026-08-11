@@ -140,9 +140,12 @@ function BuscadorLinea({ onAgregar }: { onAgregar: (v: VarianteProducto) => void
   })
   const items = React.useMemo(() => {
     const prods = busqueda.data?.items ?? []
-    return prods.flatMap((p) =>
-      (p.variants ?? []).map((v) => ({ producto: p.nombre, variante: v }))
-    )
+    // Los servicios no se recepcionan: no tienen stock físico.
+    return prods
+      .filter((p) => p.kind !== "SERVICIO")
+      .flatMap((p) =>
+        (p.variants ?? []).map((v) => ({ producto: p.nombre, variante: v }))
+      )
   }, [busqueda.data])
 
   return (

@@ -329,9 +329,12 @@ function BuscadorVariantes({
 
   const variantes = React.useMemo(() => {
     const items = busqueda.data?.items ?? []
-    return items.flatMap((p) =>
-      (p.variants ?? []).map((v) => ({ producto: p.nombre, variante: v }))
-    )
+    // Los servicios no llevan stock: no se pueden reservar.
+    return items
+      .filter((p) => p.kind !== "SERVICIO")
+      .flatMap((p) =>
+        (p.variants ?? []).map((v) => ({ producto: p.nombre, variante: v }))
+      )
   }, [busqueda.data])
 
   return (

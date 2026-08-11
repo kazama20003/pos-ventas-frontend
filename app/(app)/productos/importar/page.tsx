@@ -44,6 +44,8 @@ const MAPA_COLUMNAS: Record<string, keyof ImportarProductoFila> = {
   marca: "marca",
   impuesto: "impuesto",
   igv: "impuesto",
+  tipo: "kind",
+  kind: "kind",
 }
 
 const NUMERICOS = new Set(["precio", "costo", "stockInicial"])
@@ -108,14 +110,34 @@ function filasDesdeCSV(texto: string): ImportarProductoFila[] {
         if (Number.isFinite(n)) obj[campo] = n
       } else obj[campo] = v
     })
-    return obj as unknown as ImportarProductoFila
+    const fila = obj as unknown as ImportarProductoFila
+    // Columna opcional "tipo": SERVICIO → sin stock y unidad implícita ZZ.
+    if (typeof fila.kind === "string") {
+      if (fila.kind.trim().toUpperCase() === "SERVICIO") {
+        fila.kind = "SERVICIO"
+        delete fila.stockInicial
+        fila.unidad = UNIDAD_SERVICIO.codigo
+      } else {
+        delete fila.kind
+      }
+    }
+    return fila
   })
 }
 
 const PLANTILLA =
-  "nombre,precio,costo,stock,barcode,unidad,categoria,marca,impuesto\n" +
-  "Café americano,8.50,3.00,50,7501234567890,unidad,Bebidas,Juan Valdez,IGV\n" +
-  "Agua 625ml,2.00,1.00,120,7509876543210,unidad,Bebidas,San Luis,IGV"
+  "nombre,precio,costo,stock,barcode,unidad,categoria,marca,impuesto,tipo\n" +
+  "Café americano,8.50,3.00,50,7501234567890,unidad,Bebidas,Juan Valdez,IGV,\n" +
+  "Agua 625ml,2.00,1.00,120,7509876543210,unidad,Bebidas,San Luis,IGV,\n" +
+  "Corte de cabello,25.00,,,,,Servicios,,IGV,SERVICIO"
+
+// Unidad implícita para servicios (SUNAT ZZ), igual que en productos/nuevo.
+const UNIDAD_SERVICIO = {
+  codigo: "ZZ",
+  nombre: "Servicio",
+  symbol: "serv",
+  sunatCode: "ZZ",
+} as const
 
 export default function ImportarProductosPage() {
   const qc = useQueryClient()
@@ -257,7 +279,8 @@ export default function ImportarProductosPage() {
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
                     Columnas: nombre (obligatoria), precio, costo, stock, barcode,
-                    unidad, categoria, marca, impuesto.
+                    unidad, categoria, marca, impuesto, tipo (opcional:
+                    SERVICIO para servicios; ignora stock y unidad).
                   </p>
                   <button
                     type="button"

@@ -297,6 +297,8 @@ export const archivarProducto = (id: string) =>
 
 export type ImportarProductoFila = {
   nombre: string
+  /** Tipo de producto. Default: ESTANDAR. Si es SERVICIO se ignoran stock/unidad. */
+  kind?: TipoProducto
   codigo?: string
   precio?: number
   costo?: number
