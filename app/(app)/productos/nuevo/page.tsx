@@ -345,9 +345,23 @@ export default function NuevoProductoPage() {
       <ContextualTour
         flowKey="puesta-en-marcha"
         stepKey="producto"
-        selector="#btn-guardar-producto"
-        titulo="Crea tu primer producto"
-        descripcion="Completa el nombre y el precio, y guarda para empezar a vender."
+        pasos={[
+          {
+            selector: "#campo-nombre-producto",
+            titulo: "Escribe el nombre",
+            descripcion: "Cómo aparecerá en la boleta. Ej: Café americano.",
+          },
+          {
+            selector: "#precio",
+            titulo: "Pon el precio de venta",
+            descripcion: "Lo que cobra tu caja. Podrás cambiarlo cuando quieras.",
+          },
+          {
+            selector: "#btn-guardar-producto",
+            titulo: "Guarda tu producto",
+            descripcion: "Y listo: ya puedes venderlo.",
+          },
+        ]}
       />
       <PageHeader
         title="Nuevo producto"
@@ -381,6 +395,7 @@ export default function NuevoProductoPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Campo label="Nombre del producto">
                       <Input
+                        id="campo-nombre-producto"
                         autoFocus
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}

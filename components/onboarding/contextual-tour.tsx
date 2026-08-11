@@ -6,15 +6,23 @@ import "driver.js/dist/driver.css"
 
 import { useOnboardingProgress } from "@/hooks/use-onboarding-progress"
 
+export type PasoTour = {
+  selector: string
+  titulo: string
+  descripcion: string
+}
+
 /**
- * Coach-mark contextual de UN solo paso (driver.js). Se muestra únicamente si:
+ * Coach-mark contextual (driver.js). Soporta un solo elemento (selector/
+ * titulo/descripcion) o un mini-tour de varios pasos (`pasos`) que recorre
+ * los campos de un formulario en orden. Se muestra únicamente si:
  * - el paso del flujo está PENDIENTE (según el backend),
- * - el selector existe en el DOM,
+ * - al menos un selector existe en el DOM,
  * - no se mostró ya en esta sesión (flag en sessionStorage),
  * O SIEMPRE si el usuario llegó desde la guía flotante
  * (sessionStorage["guide-intent"] === "flowKey:stepKey"), aunque ya se haya
  * visto: el intent se consume al mostrarse.
- * Nunca bloquea: overlay clickable, cerrable con Esc o "Entendido".
+ * Nunca bloquea: overlay clickable, cerrable con Esc o los botones.
  */
 export function ContextualTour({
   flowKey,
@@ -22,12 +30,15 @@ export function ContextualTour({
   selector,
   titulo,
   descripcion,
+  pasos,
 }: {
   flowKey: string
   stepKey: string
-  selector: string
-  titulo: string
-  descripcion: string
+  selector?: string
+  titulo?: string
+  descripcion?: string
+  /** Mini-tour multi-paso; si viene, ignora selector/titulo/descripcion. */
+  pasos?: PasoTour[]
 }) {
   const { data } = useOnboardingProgress()
 
@@ -38,8 +49,16 @@ export function ContextualTour({
     return paso?.status === "PENDIENTE"
   }, [data, flowKey, stepKey])
 
+  // Normaliza: single → lista de un paso.
+  const lista = React.useMemo<PasoTour[]>(() => {
+    if (pasos && pasos.length > 0) return pasos
+    if (selector && titulo)
+      return [{ selector, titulo, descripcion: descripcion ?? "" }]
+    return []
+  }, [pasos, selector, titulo, descripcion])
+
   React.useEffect(() => {
-    if (!pendiente) return
+    if (!pendiente || lista.length === 0) return
 
     const flag = `tour:${flowKey}:${stepKey}`
     // Intent desde la guía flotante: fuerza el coach-mark aunque ya se haya
@@ -52,13 +71,14 @@ export function ContextualTour({
       return
     }
 
-    // Espera breve a que el elemento exista (render asíncrono de la vista).
+    // Espera breve a que los elementos existan (render asíncrono de la vista).
     let intentos = 0
     let d: ReturnType<typeof driver> | null = null
     const timer = setInterval(() => {
       intentos += 1
-      const el = document.querySelector(selector)
-      if (!el) {
+      // Solo recorre los pasos cuyo selector realmente existe.
+      const visibles = lista.filter((p) => document.querySelector(p.selector))
+      if (visibles.length === 0) {
         if (intentos >= 10) clearInterval(timer)
         return
       }
@@ -69,20 +89,34 @@ export function ContextualTour({
       } catch {
         /* sin storage: igual mostramos una vez */
       }
+      const ultimo = visibles.length - 1
       d = driver({
         allowClose: true,
         overlayClickBehavior: "close",
         overlayOpacity: 0.4,
         stagePadding: 4,
-        showButtons: ["next", "close"],
-        nextBtnText: "Entendido",
-        onNextClick: () => d?.destroy(),
-        steps: [
-          {
-            element: selector,
-            popover: { title: titulo, description: descripcion },
+        showProgress: visibles.length > 1,
+        progressText: "{{current}} de {{total}}",
+        showButtons:
+          visibles.length > 1 ? ["next", "previous", "close"] : ["next", "close"],
+        nextBtnText: "Siguiente",
+        prevBtnText: "Atrás",
+        doneBtnText: "Entendido",
+        onNextClick: () => {
+          if (!d) return
+          if (d.isLastStep()) d.destroy()
+          else d.moveNext()
+        },
+        steps: visibles.map((p, i) => ({
+          element: p.selector,
+          popover: {
+            title: p.titulo,
+            description: p.descripcion,
+            ...(i === ultimo && visibles.length > 1
+              ? { nextBtnText: "Entendido" }
+              : {}),
           },
-        ],
+        })),
       })
       d.drive()
     }, 300)
@@ -91,7 +125,7 @@ export function ContextualTour({
       clearInterval(timer)
       d?.destroy()
     }
-  }, [pendiente, flowKey, stepKey, selector, titulo, descripcion])
+  }, [pendiente, flowKey, stepKey, lista])
 
   return null
 }
