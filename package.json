@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "pnpm@11.20.0",
   "scripts": {
-    "dev": "next dev -p 3001",
-    "build": "next build",
-    "start": "next start -p 3001",
+    "dev": "node api.js && next dev -p 3001",
+    "build": "node api.js && next build",
+    "start": "node api.js && next start -p 3001",
     "lint": "eslint",
     "deploy:cloud-run": "bash scripts/deploy-cloud-run.sh"
   },
