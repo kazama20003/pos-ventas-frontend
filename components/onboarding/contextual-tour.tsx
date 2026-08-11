@@ -10,7 +10,10 @@ import { useOnboardingProgress } from "@/hooks/use-onboarding-progress"
  * Coach-mark contextual de UN solo paso (driver.js). Se muestra únicamente si:
  * - el paso del flujo está PENDIENTE (según el backend),
  * - el selector existe en el DOM,
- * - no se mostró ya en esta sesión (flag en sessionStorage).
+ * - no se mostró ya en esta sesión (flag en sessionStorage),
+ * O SIEMPRE si el usuario llegó desde la guía flotante
+ * (sessionStorage["guide-intent"] === "flowKey:stepKey"), aunque ya se haya
+ * visto: el intent se consume al mostrarse.
  * Nunca bloquea: overlay clickable, cerrable con Esc o "Entendido".
  */
 export function ContextualTour({
@@ -39,8 +42,12 @@ export function ContextualTour({
     if (!pendiente) return
 
     const flag = `tour:${flowKey}:${stepKey}`
+    // Intent desde la guía flotante: fuerza el coach-mark aunque ya se haya
+    // visto en esta sesión, y consume el flag al mostrarse.
+    let forzado = false
     try {
-      if (sessionStorage.getItem(flag)) return
+      forzado = sessionStorage.getItem("guide-intent") === `${flowKey}:${stepKey}`
+      if (!forzado && sessionStorage.getItem(flag)) return
     } catch {
       return
     }
@@ -58,6 +65,7 @@ export function ContextualTour({
       clearInterval(timer)
       try {
         sessionStorage.setItem(flag, "1")
+        if (forzado) sessionStorage.removeItem("guide-intent")
       } catch {
         /* sin storage: igual mostramos una vez */
       }
@@ -65,7 +73,8 @@ export function ContextualTour({
         allowClose: true,
         overlayClickBehavior: "close",
         overlayOpacity: 0.4,
-        showButtons: ["next"],
+        stagePadding: 4,
+        showButtons: ["next", "close"],
         nextBtnText: "Entendido",
         onNextClick: () => d?.destroy(),
         steps: [

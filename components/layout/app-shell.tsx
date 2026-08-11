@@ -1,5 +1,6 @@
 import { Toaster } from "sonner"
 import { AppSidebar } from "@/components/layout/app-sidebar"
+import { OnboardingGuide } from "@/components/onboarding/onboarding-guide"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Toaster richColors closeButton position="top-right" />
+      <OnboardingGuide />
     </div>
   )
 }
