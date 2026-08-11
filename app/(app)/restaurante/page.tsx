@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { RiAddLine, RiRestaurant2Line, RiTakeawayLine } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
@@ -115,6 +116,13 @@ export default function RestauranteSalonPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="primera-venta"
+        stepKey="vender"
+        selector="#mapa-mesas"
+        titulo="Haz tu primera venta"
+        descripcion="Toca una mesa libre para abrir la comanda, o vende para llevar."
+      />
       <PageHeader
         title="Salón"
         description="Mapa de mesas y comandas en curso"
@@ -152,7 +160,10 @@ export default function RestauranteSalonPage() {
       />
 
       <div className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+        <div
+          id="mapa-mesas"
+          className="mx-auto flex w-full max-w-7xl flex-col gap-4"
+        >
           {nuevaMesa ? (
             <div className="flex flex-wrap items-end gap-2 rounded-2xl border bg-card p-4">
               <div className="flex flex-col gap-1">

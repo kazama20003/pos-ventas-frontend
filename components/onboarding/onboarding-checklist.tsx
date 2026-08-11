@@ -35,7 +35,8 @@ export function OnboardingChecklist() {
 
   const irAlPaso = () => {
     marcarGuideIntent(pasoActivo.flowKey, pasoActivo.stepKey)
-    router.push(cfg?.vista ?? pasoActivo.vista)
+    // La vista del backend manda (dinámica según tipo de negocio).
+    router.push(pasoActivo.vista ?? cfg?.vista ?? "/dashboard")
   }
 
   return (

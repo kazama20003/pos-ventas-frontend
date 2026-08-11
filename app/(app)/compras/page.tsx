@@ -15,6 +15,7 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -85,6 +86,13 @@ export default function ComprasPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="primera-venta"
+        stepKey="stock"
+        selector="#panel-compras"
+        titulo="Dale stock a tu producto"
+        descripcion="Registra a tu proveedor y una compra para tener inventario."
+      />
       <PageHeader
         title="Compras"
         description={
@@ -93,7 +101,10 @@ export default function ComprasPage() {
       />
 
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto flex max-w-5xl flex-col gap-5 p-5 md:p-6">
+        <div
+          id="panel-compras"
+          className="mx-auto flex max-w-5xl flex-col gap-5 p-5 md:p-6"
+        >
           {!sucursalId ? (
             <Aviso
               icon={RiStore2Line}

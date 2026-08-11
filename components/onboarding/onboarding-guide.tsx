@@ -102,7 +102,9 @@ export function OnboardingGuide() {
     marcarGuideIntent(paso.flowKey, paso.stepKey)
     setCelebracion(null)
     setAbierto(false)
-    router.push(paso.config?.vista ?? paso.vista)
+    // La vista del backend manda: es dinámica según el tipo de negocio
+    // (p. ej. "vender" lleva al salón si el tenant es restaurante).
+    router.push(paso.vista ?? paso.config?.vista ?? "/dashboard")
   }
 
   const terminar = () => {

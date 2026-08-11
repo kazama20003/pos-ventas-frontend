@@ -6,6 +6,7 @@ import {
   RiSafe2Line,
   RiShoppingCart2Line,
   RiStore2Line,
+  RiTruckLine,
   type RemixiconComponentType,
 } from "@remixicon/react"
 
@@ -78,6 +79,16 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
   "primera-venta": {
     titulo: "Tu primera venta",
     pasos: {
+      // Solo aparece si el negocio vende producto físico (el backend arma el
+      // flujo según el tipo de negocio; servicios no pasan por aquí).
+      stock: {
+        titulo: "Dale stock a tu producto",
+        descripcion: "Registra a tu proveedor y una compra para tener inventario.",
+        cta: "Registrar compra",
+        icono: RiTruckLine,
+        vista: "/compras",
+        tourSelector: "#panel-compras",
+      },
       "abrir-caja": {
         titulo: "Abre tu caja",
         descripcion: "Inicia el turno con tu fondo para poder cobrar.",
