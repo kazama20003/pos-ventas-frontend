@@ -295,8 +295,10 @@ export function RamosLanding() {
           </div>
 
           {/* Titular gigante */}
-          <h1 className="text-[clamp(44px,8.5vw,124px)] font-medium leading-none tracking-[-0.035em]">
-            <span className="flex items-center gap-[0.15em] lg:pl-24">
+          {/* Las dos primeras líneas reservan el ancho de la tarjeta flotante
+              (470px + margen) para que las letras nunca queden tapadas. */}
+          <h1 className="text-[clamp(44px,7.6vw,112px)] font-medium leading-none tracking-[-0.035em]">
+            <span className="flex items-center gap-[0.15em] lg:pl-24 lg:pr-[510px]">
               <span className="flex shrink-0" aria-hidden>
                 <span className="grid size-[0.82em] place-items-center rounded-full bg-[#f1f0ee]">
                   <svg width="38%" height="38%" viewBox="0 0 24 24" fill="none">
@@ -326,7 +328,7 @@ export function RamosLanding() {
                 Ventas
               </span>
             </span>
-            <span className="mt-4 flex gap-[0.24em] lg:mt-8 lg:pl-6">
+            <span className="mt-4 flex flex-wrap gap-x-[0.24em] lg:mt-8 lg:pl-6 lg:pr-[510px]">
               <span className="rz-word" style={{ animationDelay: "1.9s" }}>
                 que
               </span>
@@ -337,7 +339,7 @@ export function RamosLanding() {
                 tu
               </span>
             </span>
-            <span className="mt-4 flex items-center gap-[0.2em] lg:mt-9 lg:justify-end">
+            <span className="mt-4 flex items-center gap-[0.2em] lg:mt-16 lg:justify-end lg:pr-2">
               <span className="rz-word" style={{ animationDelay: "2.35s" }}>
                 negocio
               </span>
