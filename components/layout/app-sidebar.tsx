@@ -72,6 +72,18 @@ const MODULOS: Modulo[] = [
     perm: ["catalogo.listar", "catalogo.crear", "catalogo.editar"],
   },
   {
+    label: "Restaurante",
+    desc: "Salón, comandas y cocina",
+    route: "/restaurante",
+    // Tenedor + cuchillo (equivalente a RiRestaurant2Line en trazo).
+    icon: "M8 3v6a2 2 0 0 1-4 0V3M6 3v18",
+    icon2: "M17 3c-1.6 1.8-2 4.6-2 8h3V3zM16 11v10",
+    subs: [
+      { label: "Salón", route: "/restaurante" },
+      { label: "Cocina (KDS)", route: "/restaurante/cocina" },
+    ],
+  },
+  {
     label: "Inventario",
     desc: "Stock y movimientos entre almacenes",
     route: "/inventario",
