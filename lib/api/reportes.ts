@@ -32,6 +32,39 @@ export type TopProducto = {
   total: string | number
 }
 
+export type ResumenPeriodo = {
+  total: string
+  cantidad: number
+  ticketPromedio: string
+}
+
+export type DiaSemana = {
+  fecha: string
+  total: string
+  cantidad: number
+}
+
+export type DashboardData = {
+  hoy: ResumenPeriodo
+  ayer: ResumenPeriodo
+  mes: ResumenPeriodo
+  semana: DiaSemana[]
+  topProductosHoy: TopProducto[]
+  topProductos: TopProducto[]
+  inventario: Record<string, unknown>
+  cxc: { saldoPendiente: string; cuentas: number; vencidas: number }
+  cxp: { saldoPendiente: string; cuentas: number; vencidas?: number }
+  operacion: {
+    bajoStock: number
+    cajasAbiertas: number
+    clientesNuevosMes: number
+    lotesPorVencer: number
+  }
+}
+
+export const obtenerDashboard = () =>
+  authedFetch<DashboardData>("/reportes/dashboard")
+
 export const topProductos = (
   desde: string,
   hasta: string,

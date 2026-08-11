@@ -21,6 +21,7 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -154,12 +155,31 @@ export default function SucursalesPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="puesta-en-marcha"
+        stepKey="sucursal"
+        selector="#btn-nueva-sucursal"
+        titulo="Crea tu primera sucursal"
+        descripcion="El local desde donde vas a vender."
+      />
+      <ContextualTour
+        flowKey="puesta-en-marcha"
+        stepKey="caja"
+        selector="#lista-sucursales"
+        titulo="Registra una caja"
+        descripcion="Entra a tu sucursal y agrega la caja en la pestaña Cajas."
+      />
       <PageHeader
         title="Organización"
         description="Sucursales, almacenes y cajas de tu negocio."
         actions={
           puedeGestionar ? (
-            <Button type="button" size="sm" onClick={abrirCrear}>
+            <Button
+              id="btn-nueva-sucursal"
+              type="button"
+              size="sm"
+              onClick={abrirCrear}
+            >
               <RiAddLine />
               Nueva sucursal
             </Button>
@@ -199,7 +219,7 @@ export default function SucursalesPage() {
           </div>
 
           {/* Tabla de sucursales */}
-          <div className="rounded-xl border bg-card">
+          <div id="lista-sucursales" className="rounded-xl border bg-card">
             <div className="flex items-center justify-between gap-3 border-b p-3">
               <div className="relative w-full max-w-xs">
                 <RiSearchLine className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

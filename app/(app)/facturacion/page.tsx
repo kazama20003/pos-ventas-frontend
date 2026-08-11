@@ -13,6 +13,7 @@ import {
 } from "@remixicon/react"
 
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -84,6 +85,13 @@ export default function FacturacionPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="primera-venta"
+        stepKey="comprobante"
+        selector="#panel-comprobantes"
+        titulo="Emite tu primer comprobante electrónico"
+        descripcion="Crea una serie activa (ej. Boleta B001) y cobra una venta: se enviará a SUNAT."
+      />
       <PageHeader
         title="Series de comprobante"
         description="Numeración SUNAT para boletas, facturas y notas."
@@ -127,7 +135,7 @@ export default function FacturacionPage() {
           ) : null}
 
           {/* Tabla */}
-          <div className="rounded-xl border bg-card">
+          <div id="panel-comprobantes" className="rounded-xl border bg-card">
             {empresas.isLoading || series.isLoading ? (
               <div className="flex flex-col gap-2 p-4">
                 {Array.from({ length: 3 }).map((_, i) => (

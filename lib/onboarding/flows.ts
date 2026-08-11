@@ -47,6 +47,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Configurar empresa",
         icono: RiCommunityLine,
         vista: "/configuracion",
+        tourSelector: "#seccion-empresa",
       },
       sucursal: {
         titulo: "Crea tu primera sucursal",
@@ -54,6 +55,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Crear sucursal",
         icono: RiStore2Line,
         vista: "/sucursales",
+        tourSelector: "#btn-nueva-sucursal",
       },
       caja: {
         titulo: "Registra una caja",
@@ -61,6 +63,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Registrar caja",
         icono: RiCashLine,
         vista: "/sucursales",
+        tourSelector: "#lista-sucursales",
       },
       producto: {
         titulo: "Crea tu primer producto",
@@ -68,7 +71,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Crear producto",
         icono: RiPriceTag3Line,
         vista: "/productos/nuevo",
-        tourSelector: "#btn-nuevo-producto",
+        tourSelector: "#btn-guardar-producto",
       },
     },
   },
@@ -97,6 +100,7 @@ export const FLUJOS_CONFIG: Record<string, ConfigFlujo> = {
         cta: "Ir a facturación",
         icono: RiBillLine,
         vista: "/facturacion",
+        tourSelector: "#panel-comprobantes",
       },
     },
   },

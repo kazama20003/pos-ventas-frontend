@@ -18,6 +18,7 @@ import {
 
 import { ImageUpload } from "@/components/productos/image-upload"
 import { PageHeader } from "@/components/layout/page-header"
+import { ContextualTour } from "@/components/onboarding/contextual-tour"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -341,6 +342,13 @@ export default function NuevoProductoPage() {
 
   return (
     <>
+      <ContextualTour
+        flowKey="puesta-en-marcha"
+        stepKey="producto"
+        selector="#btn-guardar-producto"
+        titulo="Crea tu primer producto"
+        descripcion="Completa el nombre y el precio, y guarda para empezar a vender."
+      />
       <PageHeader
         title="Nuevo producto"
         description="Completa los datos. Lo marcado como opcional puedes dejarlo en blanco."
@@ -699,7 +707,11 @@ export default function NuevoProductoPage() {
         <Button variant="ghost" onClick={() => router.push("/productos")}>
           Cancelar
         </Button>
-        <Button onClick={enviar} disabled={!valido || guardar.isPending}>
+        <Button
+          id="btn-guardar-producto"
+          onClick={enviar}
+          disabled={!valido || guardar.isPending}
+        >
           {guardar.isPending ? "Guardando…" : "Guardar producto"}
         </Button>
       </div>
